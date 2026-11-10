@@ -1,2 +1,44 @@
 # clinical-protocol-skill
-Clinical research protocol design full workflow skill, including IIT, multi-center study templates, protocol writing, review checklist and supporting documents.
+> 临床研究方案设计全流程 Agent Skill
+
+## 📌 简介
+本仓库为面向临床研究的AI技能包，聚焦**IIT研究者发起研究、多中心临床研究**全流程方案设计，内置标准化模板、核查清单、伦理配套文档，用于辅助方案撰写、合规自查、伦理应答与配套文书生成。
+
+✅ 覆盖研究类型：
+- IIT单中心/多中心研究
+- RCT随机对照试验
+- 回顾性/前瞻性队列、病例对照、横断面研究
+- 诊断试验、真实世界研究
+
+✅ 可输出配套文档：
+- 临床研究方案初稿
+- ICF知情同意书
+- SAP统计分析计划
+- CRF设计模板
+- 伦理审查答复函
+- 方案修订记录、立项汇报大纲
+
+## 🧩 技能加载方式
+技能文件路径：`.github/skills/clinical-protocol-design/SKILL.md`
+
+## 📖 使用指引
+激活指令示例（任选）
+1. 基于XX疾病，帮我起草一份IIT研究方案
+2. 帮我生成该RCT方案对应的SAP统计分析计划
+3. 对这份方案做GCP合规核查，输出核查清单
+4. 针对伦理委员会提出的问题，逐条撰写应答意见
+5. 生成成人知情同意书模板
+
+## ⚠️ 重要免责声明
+本技能所有输出仅为**学术写作模板与辅助框架**，不替代统计师、伦理委员会、药监机构的正式评审；所有文稿提交伦理/立项前，必须由研究团队、统计师、PI共同审核确认，符合《研究者发起临床研究管理办法》及GCP相关要求。
+不构成诊疗建议、试验有效性承诺。
+
+## 📂 目录说明
+```
+.
+├── README.md                           # 仓库说明
+└── .github/
+    └── skills/
+        └── clinical-protocol-design/
+            └── SKILL.md               # Agent技能主文件
+```
