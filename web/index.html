@@ -355,6 +355,25 @@
     z-index: 0;
     transition: width 0.7s var(--ease-expo);
   }
+  /* 进度元信息：步骤名 + 百分比 */
+  .progress-meta {
+    max-width: 900px;
+    margin: 16px auto 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 1.2px;
+  }
+  .pm-num {
+    font-family: var(--font-latin-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  .pm-pct { font-variant-numeric: tabular-nums; }
   .step-item {
     display: flex;
     flex-direction: column;
@@ -428,6 +447,7 @@
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.4s ease, transform 0.4s ease;
+    position: relative;
   }
   .step-panel.active {
     display: block;
@@ -521,6 +541,8 @@
     background-repeat: no-repeat;
     position: relative;
     overflow: hidden;
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    will-change: transform;
   }
   .option-card::before {
     content: '';
@@ -534,8 +556,8 @@
   }
   .option-card:hover {
     border-color: var(--primary-light);
-    box-shadow: var(--shadow);
-    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-4px);
   }
   .option-card:hover::before {
     transform: scaleX(1);
@@ -647,13 +669,18 @@
     border-radius: 10px;
     font-size: 14px;
     transition: var(--transition);
-    background: white;
+    background-color: white;
+    background-image: linear-gradient(90deg, var(--accent), #b8984f);
+    background-size: 0% 2px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
     color: var(--text);
   }
   .form-input:focus, .form-select:focus, .form-textarea:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 4px var(--primary-glow);
+    background-size: 100% 2px;
   }
   .form-textarea { min-height: 80px; resize: vertical; }
   .form-row {
@@ -665,6 +692,47 @@
     font-size: 12px;
     color: var(--text-secondary);
     margin-top: 6px;
+  }
+
+  /* 方案信息完整度仪表 */
+  .meter-block {
+    margin: -8px 0 28px;
+    padding: 16px 20px;
+    border: 1px solid rgba(201, 169, 97, 0.25);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(201, 169, 97, 0.06), rgba(21, 64, 122, 0.04));
+  }
+  .meter-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+  }
+  .meter-pct {
+    margin-left: auto;
+    font-family: var(--font-latin-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .meter-track {
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(21, 64, 122, 0.08);
+    overflow: hidden;
+  }
+  .meter-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent) 0%, #e8d5a3 100%);
+    box-shadow: 0 0 10px var(--accent-glow);
+    transition: width 0.6s var(--ease-expo);
   }
 
   /* 复选框组 */
@@ -682,6 +750,8 @@
     cursor: pointer;
     background: rgba(255, 255, 255, 0.55);
     transition: var(--transition);
+    position: relative;
+    overflow: hidden;
   }
   .checkbox-item:hover {
     border-color: var(--primary-light);
@@ -726,6 +796,8 @@
     border: none;
     transition: var(--transition);
     letter-spacing: 0.3px;
+    position: relative;
+    overflow: hidden;
   }
   .btn-secondary {
     background: #f1f5f9;
@@ -894,6 +966,50 @@
     transform: translateY(0) translateX(0);
   }
 
+  /* 点击涟漪 */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(201, 169, 97, 0.28);
+    transform: scale(0);
+    animation: rippleAnim 0.6s ease-out forwards;
+    pointer-events: none;
+    z-index: 1;
+  }
+  @keyframes rippleAnim {
+    to { transform: scale(2.6); opacity: 0; }
+  }
+
+  /* 星尘迸发（进入预览页的仪式感） */
+  .burst-particle {
+    position: absolute;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+    pointer-events: none;
+    z-index: 6;
+    animation: burstFly 1.3s var(--ease-expo) forwards;
+  }
+  @keyframes burstFly {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+  }
+
+  /* 预览页概览卡与核查清单级联 */
+  .step-panel.active .summary-cards > * {
+    animation: fadeUp 0.5s var(--ease-expo) both;
+  }
+  .step-panel.active .summary-cards > *:nth-child(1) { animation-delay: 0.20s; }
+  .step-panel.active .summary-cards > *:nth-child(2) { animation-delay: 0.27s; }
+  .step-panel.active .summary-cards > *:nth-child(3) { animation-delay: 0.34s; }
+  .step-panel.active .summary-cards > *:nth-child(4) { animation-delay: 0.41s; }
+  .step-panel.active .summary-cards > *:nth-child(5) { animation-delay: 0.48s; }
+  .step-panel.active .summary-cards > *:nth-child(n+6) { animation-delay: 0.55s; }
+  .step-panel.active .checklist-item {
+    animation: fadeUp 0.45s var(--ease-expo) both;
+  }
+
   /* 双语隐藏 */
   .lang-en .zh { display: none; }
   .lang-zh .en { display: none; }
@@ -990,6 +1106,11 @@
       <div class="step-circle">5</div>
       <div class="step-label"><span class="zh">方案预览</span><span class="en">Preview</span></div>
     </div>
+  </div>
+  <div class="progress-meta">
+    <span class="zh">第 <span class="pm-num" id="pm-step-num">1</span> / 5 步 · <span id="pm-step-name">研究类型</span></span>
+    <span class="en">Step <span class="pm-num" id="pm-step-num-en">1</span> / 5 · <span id="pm-step-name-en">Study Type</span></span>
+    <span class="pm-pct"><span class="pm-num" id="progress-pct">20</span>%</span>
   </div>
 </div>
 
@@ -1117,6 +1238,15 @@
     <div class="step-title-en"><span class="zh">填写研究核心信息，系统将自动生成方案框架</span><span class="en">Enter core study details, system will generate protocol framework</span></div>
     <div class="step-desc zh">带 * 为必填项，其余可后续补充。</div>
     <div class="step-desc en">Fields marked * are required; others can be completed later.</div>
+
+    <!-- 方案信息完整度仪表 -->
+    <div class="meter-block">
+      <div class="meter-head">
+        <span class="zh">方案信息完整度</span><span class="en">Info Completeness</span>
+        <span class="meter-pct" id="meter-pct">0%</span>
+      </div>
+      <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+    </div>
 
     <div class="form-group">
       <label class="form-label">
@@ -1480,6 +1610,10 @@ function prevStep() {
 }
 
 let lastStep = 1;
+const stepNames = [
+  ['研究类型', 'Study Type'], ['研究设计', 'Design'], ['基础信息', 'Details'],
+  ['配套文档', 'Documents'], ['方案预览', 'Preview']
+];
 function updateStepUI() {
   const forward = state.currentStep >= lastStep;
   lastStep = state.currentStep;
@@ -1489,6 +1623,15 @@ function updateStepUI() {
   // 驱动金色进度轨道
   const fill = document.getElementById('progress-fill');
   if (fill) fill.style.width = ((state.currentStep - 1) / 4 * 80) + '%';
+  // 进度元信息：步骤名 + 百分比滚动
+  const [zhName, enName] = stepNames[state.currentStep - 1];
+  const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setTxt('pm-step-num', state.currentStep);
+  setTxt('pm-step-num-en', state.currentStep);
+  setTxt('pm-step-name', zhName);
+  setTxt('pm-step-name-en', enName);
+  animatePct(state.currentStep / 5 * 100);
+  if (state.currentStep === 5) setTimeout(celebrate, 350);
   document.querySelectorAll('.step-item').forEach(item => {
     const step = parseInt(item.dataset.step);
     item.classList.remove('active', 'completed');
@@ -1718,8 +1861,8 @@ function generatePreview() {
     checkItems = [...checkItems, ...rweItems];
   }
 
-  checklistEl.innerHTML = checkItems.map(item => `
-    <div class="checklist-item">
+  checklistEl.innerHTML = checkItems.map((item, i) => `
+    <div class="checklist-item" style="animation-delay: ${(0.3 + i * 0.05).toFixed(2)}s">
       <input type="checkbox" checked>
       <span class="cl-text">${item}</span>
     </div>
@@ -1837,14 +1980,94 @@ window.addEventListener('load', function() {
   syncMotion();
 })();
 
-/* ===== 选项卡片光标光晕追踪（含动态生成的设计选项） ===== */
+/* ===== 选项卡片：光标光晕 + 3D 磁吸倾斜（含动态生成的设计选项） ===== */
 document.addEventListener('mousemove', e => {
   const card = e.target.closest('.option-card');
   if (!card) return;
   const rect = card.getBoundingClientRect();
-  card.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100) + '%');
-  card.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100) + '%');
+  const fx = (e.clientX - rect.left) / rect.width;
+  const fy = (e.clientY - rect.top) / rect.height;
+  card.style.setProperty('--mx', (fx * 100) + '%');
+  card.style.setProperty('--my', (fy * 100) + '%');
+  card.style.setProperty('--ry', ((fx - 0.5) * 7) + 'deg');
+  card.style.setProperty('--rx', ((0.5 - fy) * 7) + 'deg');
 });
+document.addEventListener('mouseout', e => {
+  const card = e.target.closest && e.target.closest('.option-card');
+  if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return;
+  card.style.setProperty('--rx', '0deg');
+  card.style.setProperty('--ry', '0deg');
+});
+
+/* ===== 点击涟漪反馈 ===== */
+document.addEventListener('click', e => {
+  const t = e.target.closest('.option-card, .btn, .checkbox-item');
+  if (!t) return;
+  const rect = t.getBoundingClientRect();
+  const d = Math.max(rect.width, rect.height);
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  ripple.style.width = ripple.style.height = d + 'px';
+  ripple.style.left = (e.clientX - rect.left - d / 2) + 'px';
+  ripple.style.top = (e.clientY - rect.top - d / 2) + 'px';
+  t.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 650);
+});
+
+/* ===== 方案信息完整度仪表 ===== */
+const meterFields = ['project-name', 'disease', 'intervention', 'control', 'center-count',
+  'secondary-endpoints', 'inclusion-criteria', 'exclusion-criteria', 'primary-endpoint'];
+function updateMeter() {
+  const fill = document.getElementById('meter-fill');
+  if (!fill) return;
+  let filled = 0;
+  meterFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && String(el.value).trim()) filled++;
+  });
+  const pct = Math.round(filled / meterFields.length * 100);
+  fill.style.width = pct + '%';
+  document.getElementById('meter-pct').textContent = pct + '%';
+}
+document.addEventListener('input', e => {
+  if (meterFields.includes(e.target.id)) updateMeter();
+});
+
+/* ===== 星尘迸发：进入预览页的仪式感 ===== */
+function celebrate() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const host = document.getElementById('panel-5');
+  if (!host) return;
+  for (let i = 0; i < 26; i++) {
+    const p = document.createElement('div');
+    p.className = 'burst-particle';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 90 + Math.random() * 170;
+    p.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+    p.style.setProperty('--dy', (Math.sin(angle) * dist - 40) + 'px');
+    p.style.left = '50%';
+    p.style.top = '110px';
+    host.appendChild(p);
+    setTimeout(() => p.remove(), 1400);
+  }
+}
+
+/* ===== 进度百分比数字滚动 ===== */
+let pctRaf = null, pctCur = 20;
+function animatePct(target) {
+  const el = document.getElementById('progress-pct');
+  if (!el) return;
+  cancelAnimationFrame(pctRaf);
+  const from = pctCur, start = performance.now();
+  function tick(now) {
+    const k = Math.min(1, (now - start) / 600);
+    const eased = 1 - Math.pow(1 - k, 3);
+    pctCur = Math.round(from + (target - from) * eased);
+    el.textContent = pctCur;
+    if (k < 1) pctRaf = requestAnimationFrame(tick);
+  }
+  pctRaf = requestAnimationFrame(tick);
+}
 </script>
 
 </body>
