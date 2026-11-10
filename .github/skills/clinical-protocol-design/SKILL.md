@@ -198,3 +198,14 @@ description: 临床研究方案设计全流程技能，融合ICH M11、SPIRIT 20
 - 章节编号清晰，层级分明，可直接复制至Word排版
 - 模板预留填充位标注明确，说明性文字与正式文本区分清晰
 - 核查清单采用条目化格式，便于逐条核对
+
+## 参考资料
+本技能模板设计依据的原始规范文件索引详见：`references/README.md`
+
+核心参考来源：
+- ICH M11 电子结构化临床方案模板（草案）
+- SPIRIT 2013 Statement: Defining Standard Protocol Items for Clinical Trials
+- 北京大学临床研究方案撰写指南
+- 四川大学华西口腔医院临床研究项目模板
+- 干预性临床研究方案模板
+- 观察性临床研究方案模板
