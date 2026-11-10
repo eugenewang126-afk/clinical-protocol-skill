@@ -1579,7 +1579,7 @@
       <div style="display: flex; gap: 12px;">
         <button class="btn btn-secondary" onclick="copyProtocol()"><span class="zh">复制方案文本</span><span class="en">Copy Protocol</span></button>
         <button class="btn btn-gold" onclick="exportWord()">
-          <span class="zh">导出全套 Word 方案</span><span class="en">Export Full Word Package</span>
+          <span class="zh">导出全套 Word 方案（.docx）</span><span class="en">Export .docx Package</span>
         </button>
       </div>
     </div>
@@ -1589,6 +1589,9 @@
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- docx.js（UMD）：生成真正的 .docx；加载失败自动降级为 .doc -->
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js" defer></script>
 
 <script>
 // 全局状态
@@ -2556,10 +2559,338 @@ function buildChecklistWord(zh) {
 <table><tr><th style="width:8%">${zh ? '序号' : 'No.'}</th><th>${zh ? '核查项' : 'Item'}</th><th style="width:14%">${zh ? '确认' : 'Check'}</th></tr>
 ${items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(it)}</td><td>☐</td></tr>`).join('')}</table>`;
 }
-function exportWord() {
-  collectFormData();
-  const zh = state.lang === 'zh';
-  const title = state.projectName || (zh ? '临床研究方案' : 'Clinical Study Protocol');
+/* ===== 文档引擎：docx.js 加载（多 CDN 兜底 + 超时降级） ===== */
+const DOCX_CDNS = [
+  'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js',
+  'https://unpkg.com/docx@8.5.0/build/index.umd.js',
+  'https://fastly.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js'
+];
+let docxLoadPromise = null;
+function docxLib() {
+  const d = (typeof window !== 'undefined') ? window.docx : null;
+  return (d && d.Document && d.Packer) ? d : null;
+}
+function loadDocxEngine(timeout) {
+  timeout = timeout || 9000;
+  if (docxLib()) return Promise.resolve(true);
+  if (docxLoadPromise) return docxLoadPromise;
+  docxLoadPromise = new Promise(resolve => {
+    let i = 0, done = false;
+    const finish = ok => { if (!done) { done = true; resolve(ok); } };
+    const timer = setTimeout(() => finish(!!docxLib()), timeout);
+    const next = () => {
+      if (docxLib()) { clearTimeout(timer); return finish(true); }
+      if (i >= DOCX_CDNS.length) { clearTimeout(timer); return finish(false); }
+      const s = document.createElement('script');
+      s.src = DOCX_CDNS[i++];
+      s.async = true;
+      s.onload = () => { if (docxLib()) { clearTimeout(timer); finish(true); } else { next(); } };
+      s.onerror = () => { s.remove(); next(); };
+      document.head.appendChild(s);
+    };
+    next();
+  });
+  return docxLoadPromise;
+}
+
+/* ===== DOCX 渲染器：把内容 HTML 解析为 docx 文档模型 ===== */
+const DOCX_FONT = {
+  body: { ascii: 'Times New Roman', hAnsi: 'Times New Roman', eastAsia: '宋体' },
+  head: { ascii: 'Times New Roman', hAnsi: 'Times New Roman', eastAsia: '黑体' }
+};
+const DOCX_RED = 'C00000';
+
+function docxBlocksFromHtml(htmlStr) {
+  const D = docxLib();
+  const { Paragraph, TextRun, Table, TableRow, TableCell, AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign } = D;
+
+  const doc = new DOMParser().parseFromString('<div id="__root">' + htmlStr + '</div>', 'text/html');
+  const root = doc.getElementById('__root');
+  const blocks = [];
+  let pendingBreak = false;
+  let inCover = false;
+
+  const takeBreak = () => { const b = pendingBreak; pendingBreak = false; return b; };
+
+  const BD = { style: BorderStyle.SINGLE, size: 4, color: '444444' };
+  const NONE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const TABLE_BORDERS = { top: BD, bottom: BD, left: BD, right: BD, insideHorizontal: BD, insideVertical: BD };
+  const NO_BORDERS = { top: NONE, bottom: NONE, left: NONE, right: NONE, insideHorizontal: NONE, insideVertical: NONE };
+
+  /* 行内节点 → TextRun[] */
+  function runsFromNodes(nodes, style) {
+    const runs = [];
+    Array.from(nodes).forEach(n => {
+      if (n.nodeType === 3) {
+        const t = n.nodeValue.replace(/[\t\r\n]+/g, ' ').replace(/ {2,}/g, ' ');
+        if (t.trim() === '') { if (t && runs.length) runs.push(new TextRun(Object.assign({}, style, { text: ' ' }))); return; }
+        runs.push(new TextRun(Object.assign({}, style, { text: t })));
+      } else if (n.nodeType === 1) {
+        const tag = n.tagName.toLowerCase();
+        if (tag === 'br') { runs.push(new TextRun(Object.assign({}, style, { break: 1 }))); return; }
+        if (n.classList && n.classList.contains('placeholder')) {
+          runs.push(new TextRun(Object.assign({}, style, { text: n.textContent, color: DOCX_RED })));
+          return;
+        }
+        if (tag === 'b' || tag === 'strong') { runs.push.apply(runs, runsFromNodes(n.childNodes, Object.assign({}, style, { bold: true }))); return; }
+        if (tag === 'i' || tag === 'em') { runs.push.apply(runs, runsFromNodes(n.childNodes, Object.assign({}, style, { italics: true }))); return; }
+        runs.push.apply(runs, runsFromNodes(n.childNodes, style));
+      }
+    });
+    return runs;
+  }
+
+  /* 读取元素内联字号/颜色（保留原 HTML 的排版细节） */
+  function inlineStyle(node, base) {
+    const s = Object.assign({}, base);
+    const attr = node.getAttribute ? node.getAttribute('style') : '';
+    if (!attr) return s;
+    const mSize = /font-size:\s*([\d.]+)\s*pt/i.exec(attr);
+    if (mSize) s.size = Math.round(parseFloat(mSize[1]) * 2);
+    const mColor = /color:\s*#([0-9a-fA-F]{3,6})/i.exec(attr);
+    if (mColor) {
+      let hex = mColor[1];
+      if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+      s.color = hex.toUpperCase();
+    }
+    return s;
+  }
+
+  function mkPara(node, o) {
+    o = o || {};
+    const style = o.runStyle || { size: 24, font: DOCX_FONT.body };
+    let runs = runsFromNodes(node ? node.childNodes : [], style);
+    if (!runs.length) runs = [new TextRun(Object.assign({}, style, { text: '' }))];
+    return new Paragraph({
+      children: runs,
+      alignment: o.align,
+      spacing: o.spacing,
+      border: o.border,
+      indent: o.indent,
+      bullet: o.bullet,
+      keepNext: o.keepNext,
+      pageBreakBefore: o.pageBreakBefore
+    });
+  }
+
+  /* 单元格内容 → 段落数组 */
+  function cellParagraphs(cell) {
+    const style = { size: 22, font: DOCX_FONT.body };
+    const out = [];
+    let buf = [];
+    const flush = () => {
+      if (buf.length) {
+        out.push(new Paragraph({ children: runsFromNodes(buf, style), spacing: { before: 20, after: 20 } }));
+        buf = [];
+      }
+    };
+    Array.from(cell.childNodes).forEach(n => {
+      if (n.nodeType === 1) {
+        const tag = n.tagName.toLowerCase();
+        if (tag === 'p' || tag === 'div') {
+          flush();
+          out.push(new Paragraph({ children: runsFromNodes(n.childNodes, style), spacing: { before: 20, after: 20 } }));
+          return;
+        }
+        if (tag === 'ul' || tag === 'ol') {
+          flush();
+          Array.from(n.children).forEach(li => out.push(new Paragraph({
+            children: runsFromNodes(li.childNodes, style),
+            bullet: { level: 0 },
+            spacing: { before: 20, after: 20 }
+          })));
+          return;
+        }
+        if (tag === 'table') { flush(); return; }
+      }
+      buf.push(n);
+    });
+    flush();
+    if (!out.length) out.push(new Paragraph({ children: [new TextRun(Object.assign({}, style, { text: '' }))] }));
+    return out;
+  }
+
+  function mkTable(node) {
+    const trs = Array.from(node.querySelectorAll('tr')).filter(tr => tr.closest('table') === node);
+    if (!trs.length) return null;
+    const firstCells = Array.from(trs[0].children);
+    const widths = firstCells.map(td => {
+      const m = /width:\s*([\d.]+)%/.exec(td.getAttribute('style') || '');
+      return m ? parseFloat(m[1]) : 0;
+    });
+    const widthSum = widths.reduce((a, b) => a + b, 0);
+    const usePct = widthSum > 0;
+    const rows = trs.map(tr => {
+      const cells = Array.from(tr.children);
+      const isHead = cells.some(c => c.tagName.toLowerCase() === 'th');
+      return new TableRow({
+        tableHeader: isHead,
+        children: cells.map((c, ci) => {
+          const cellOpts = {
+            children: cellParagraphs(c),
+            verticalAlign: VerticalAlign.TOP,
+            margins: { top: 60, bottom: 60, left: 110, right: 110 }
+          };
+          if (usePct && widths[ci]) cellOpts.width = { size: widths[ci], type: WidthType.PERCENTAGE };
+          if (isHead) cellOpts.shading = { fill: 'EEEEEE', type: ShadingType.CLEAR, color: 'auto' };
+          return new TableCell(cellOpts);
+        })
+      });
+    });
+    return new Table({
+      rows: rows,
+      width: inCover ? { size: 75, type: WidthType.PERCENTAGE } : { size: 100, type: WidthType.PERCENTAGE },
+      alignment: inCover ? AlignmentType.CENTER : undefined,
+      borders: inCover ? NO_BORDERS : TABLE_BORDERS
+    });
+  }
+
+  function walk(parent) {
+    Array.from(parent.childNodes).forEach(node => {
+      if (node.nodeType === 3) {
+        const t = node.nodeValue.replace(/[\t\r\n]+/g, ' ').trim();
+        if (!t) return;
+        blocks.push(new Paragraph({
+          children: [new TextRun({ size: 24, font: DOCX_FONT.body, text: t })],
+          spacing: { before: 60, after: 60, line: 320 },
+          pageBreakBefore: takeBreak()
+        }));
+        return;
+      }
+      if (node.nodeType !== 1) return;
+
+      const tag = node.tagName.toLowerCase();
+      const cls = node.classList || { contains: () => false };
+
+      /* 分页标记 */
+      if (cls.contains('pb')) { pendingBreak = true; return; }
+
+      /* 封面 */
+      if (cls.contains('cover')) { inCover = true; walk(node); inCover = false; return; }
+
+      /* 配套文档标题（独立成页、居中） */
+      if (cls.contains('doc-head')) {
+        blocks.push(new Paragraph({
+          children: [new TextRun({ size: 32, bold: true, font: DOCX_FONT.head, text: node.textContent.trim() })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 0, after: 300 },
+          pageBreakBefore: takeBreak(),
+          keepNext: true
+        }));
+        return;
+      }
+
+      /* 封面主标题 */
+      if (cls.contains('t')) {
+        blocks.push(new Paragraph({
+          children: [new TextRun({ size: 44, bold: true, font: DOCX_FONT.head, text: node.textContent.trim() })],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 0, after: 240 },
+          line: 360
+        }));
+        return;
+      }
+
+      if (tag === 'h1' || tag === 'h2') {
+        blocks.push(new Paragraph({
+          children: [new TextRun({ size: 28, bold: true, font: DOCX_FONT.head, text: node.textContent.trim() })],
+          spacing: { before: 300, after: 140, line: 320 },
+          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '999999', space: 4 } },
+          keepNext: true,
+          pageBreakBefore: takeBreak()
+        }));
+        return;
+      }
+
+      if (tag === 'h3') {
+        blocks.push(new Paragraph({
+          children: [new TextRun({ size: 25, bold: true, font: DOCX_FONT.head, text: node.textContent.trim() })],
+          spacing: { before: 200, after: 100, line: 320 },
+          keepNext: true,
+          pageBreakBefore: takeBreak()
+        }));
+        return;
+      }
+
+      if (tag === 'p') {
+        blocks.push(mkPara(node, {
+          align: inCover ? AlignmentType.CENTER : undefined,
+          spacing: inCover ? { before: 120, after: 120, line: 320 } : { before: 60, after: 60, line: 320 },
+          runStyle: inlineStyle(node, inCover ? { size: 28, font: DOCX_FONT.body } : { size: 24, font: DOCX_FONT.body }),
+          pageBreakBefore: takeBreak()
+        }));
+        return;
+      }
+
+      if (tag === 'ul' || tag === 'ol') {
+        Array.from(node.children).forEach((li, idx) => {
+          if (li.tagName.toLowerCase() !== 'li') return;
+          blocks.push(mkPara(li, {
+            spacing: { before: 40, after: 40, line: 320 },
+            bullet: { level: 0 },
+            pageBreakBefore: idx === 0 ? takeBreak() : false
+          }));
+        });
+        return;
+      }
+
+      if (tag === 'table') {
+        if (pendingBreak) {
+          blocks.push(new Paragraph({ children: [new TextRun({ text: '' })], spacing: { before: 0, after: 0 }, pageBreakBefore: true }));
+          pendingBreak = false;
+        }
+        const t = mkTable(node);
+        if (t) blocks.push(t);
+        return;
+      }
+
+      if (tag === 'div' || tag === 'section' || tag === 'span') { walk(node); return; }
+      walk(node);
+    });
+  }
+
+  walk(root);
+  return blocks;
+}
+
+function buildDocxBlob(zh, title) {
+  const D = docxLib();
+  if (!D) return Promise.reject(new Error('docx engine not loaded'));
+  const bodyHtml = buildCover(zh, title)
+    + '<div class="doc-head">' + (zh ? '研究方案正文' : 'Protocol Body') + '</div>'
+    + buildProtocolWord(zh)
+    + buildSupportDocsWord(zh, title)
+    + buildChecklistWord(zh);
+  const blocks = docxBlocksFromHtml(bodyHtml);
+  const pageNumFont = { ascii: 'Times New Roman', hAnsi: 'Times New Roman', eastAsia: '宋体' };
+  const doc = new D.Document({
+    creator: 'Clinical Protocol Designer',
+    title: zh ? title + ' 临床研究方案' : title + ' Clinical Study Protocol',
+    description: 'Generated by Clinical Protocol Designer',
+    styles: { default: { document: { run: { size: 24, font: DOCX_FONT.body } } } },
+    sections: [{
+      properties: {
+        page: {
+          size: { width: 11906, height: 16838 },
+          margin: { top: 1440, right: 1588, bottom: 1440, left: 1588, header: 700, footer: 700 }
+        }
+      },
+      footers: {
+        default: new D.Footer({
+          children: [new D.Paragraph({
+            alignment: D.AlignmentType.CENTER,
+            children: [new D.TextRun({ children: [D.PageNumber.CURRENT], size: 18, color: '808080', font: pageNumFont })]
+          })]
+        })
+      },
+      children: blocks
+    }]
+  });
+  return D.Packer.toBlob(doc);
+}
+
+/* 旧渲染器保留为兜底：docx 引擎不可用时导出 Word HTML (.doc) */
+function exportDocHtml(zh, title) {
   const content = buildCover(zh, title)
     + `<div class="doc-head">${zh ? '研究方案正文' : 'Protocol Body'}</div>`
     + buildProtocolWord(zh)
@@ -2567,17 +2898,60 @@ function exportWord() {
     + buildChecklistWord(zh);
   const html = wordShell(title, content);
   const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' });
+  return { blob: blob, ext: '.doc' };
+}
+
+function triggerDownload(blob, filename) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = (zh ? '' : '') + title.replace(/[\\/:*?"<>|]/g, '_') + (zh ? '_全套方案.doc' : '_FullPackage.doc');
+  const url = URL.createObjectURL(blob);
+  a.href = url;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function exportWord() {
+  collectFormData();
+  const zh = state.lang === 'zh';
+  const title = state.projectName || (zh ? '临床研究方案' : 'Clinical Study Protocol');
   const docCount = state.selectedDocs.filter(d => docBuilders[d]).length;
-  showToast(zh
-    ? `已导出 Word 全套方案（正文 + ${docCount} 份配套文档 + 核查清单）`
-    : `Word package exported (protocol + ${docCount} documents + checklist)`);
+  const baseName = title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 60) || 'Protocol';
+  const btn = document.querySelector('.btn-gold');
+  const labelZh = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+
+  try {
+    if (!docxLib()) {
+      showToast(zh ? '正在加载 Word 引擎…' : 'Loading Word engine…');
+      await loadDocxEngine();
+    }
+    if (docxLib()) {
+      const blob = await buildDocxBlob(zh, title);
+      triggerDownload(blob, baseName + (zh ? '_全套方案.docx' : '_FullPackage.docx'));
+      showToast(zh
+        ? `已导出 .docx（正文 + ${docCount} 份配套文档 + 核查清单）`
+        : `.docx exported (protocol + ${docCount} documents + checklist)`);
+    } else {
+      const r = exportDocHtml(zh, title);
+      triggerDownload(r.blob, baseName + (zh ? '_全套方案.doc' : '_FullPackage.doc'));
+      showToast(zh
+        ? 'Word 引擎未加载（离线），已导出兼容格式 .doc'
+        : 'Engine offline — exported compatible .doc');
+    }
+  } catch (err) {
+    console.error('[exportWord]', err);
+    try {
+      const r = exportDocHtml(zh, title);
+      triggerDownload(r.blob, baseName + (zh ? '_全套方案.doc' : '_FullPackage.doc'));
+      showToast(zh ? '.docx 生成异常，已降级导出 .doc' : 'docx failed — exported .doc');
+    } catch (e2) {
+      showToast(zh ? '导出失败，请检查浏览器设置' : 'Export failed');
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.innerHTML = labelZh; }
+  }
 }
 
 /* ===== 星尘迸发：进入预览页的仪式感 ===== */
