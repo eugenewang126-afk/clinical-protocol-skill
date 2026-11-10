@@ -963,7 +963,49 @@
     font-size: 13px;
     color: var(--text);
     line-height: 1.8;
+    max-height: 640px;
+    overflow-y: auto;
+    padding-right: 8px;
   }
+  .preview-content h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 24px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.3px;
+  }
+  .preview-content h2:first-child { margin-top: 0; }
+  .preview-content h3 {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--primary-light);
+    margin: 16px 0 6px;
+  }
+  .preview-content p { margin: 0 0 9px; }
+  .preview-content ul { margin: 4px 0 10px 20px; padding: 0; }
+  .preview-content li { margin-bottom: 5px; }
+  .preview-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 16px;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.55);
+  }
+  .preview-content th, .preview-content td {
+    border: 1px solid var(--border);
+    padding: 6px 9px;
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  .preview-content th {
+    background: rgba(201, 169, 97, 0.12);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .preview-content .placeholder { color: #c0392b; }
   .preview-content .section { margin-bottom: 14px; }
   .preview-content .section-title {
     font-weight: 600;
@@ -1809,114 +1851,27 @@ function collectFormData() {
 }
 
 // 生成方案文本
-function generateProtocolText() {
-  const isDomestic = state.templateVersion === 'domestic';
-  const typeName = i18n.type[state.researchType]?.[state.lang] || '';
-  const designName = i18n.design[state.researchDesign]?.[state.lang] || '';
-  const projectName = state.projectName || (state.lang === 'zh' ? '【研究项目名称】' : '[Study Title]');
-
-  let text = '';
-  if (state.lang === 'zh') {
-    text += `# ${projectName}\n\n`;
-    text += `**研究类型**：${typeName}\n`;
-    text += `**研究设计**：${designName}\n`;
-    text += `**发起主体**：${i18n.sponsor[state.sponsorType].zh}\n\n`;
-
-    if (state.researchType === 'realworld') {
-      text += `## 一、研究背景与立题依据\n`;
-      text += `【待补充：临床需求、RWD数据来源、FDA RWE适用性分析】\n\n`;
-      text += `## 二、研究目的\n`;
-      text += `**主要目的**：${state.primaryEndpoint || '【待补充】'}\n\n`;
-      text += `## 三、RWE三步评估框架\n`;
-      text += `### 3.1 数据适用性评估（Fit for Purpose）\n`;
-      text += `【待补充：数据来源、数据质量、完整性、代表性】\n\n`;
-      text += `### 3.2 研究设计科学性评估\n`;
-      text += `- 研究设计：${designName}\n`;
-      text += `- 样本量：${state.sampleSize || '【待估算】'}例\n`;
-      text += `- 偏倚控制策略：【待补充】\n\n`;
-      text += `### 3.3 研究执行合规性评估\n`;
-      text += `【待补充：数据治理、伦理审查、隐私保护】\n\n`;
-      text += `## 四、研究人群与数据来源\n`;
-      text += `【待补充：研究人群定义、数据来源（登记数据库/EHR/理赔数据）】\n\n`;
-      text += `## 五、统计分析计划\n`;
-      text += `【待补充：倾向性评分匹配、工具变量、阴性对照等方法】\n\n`;
-      text += `## 六、伦理与数据安全\n`;
-      text += `【待补充：伦理审查、去标识化、数据安全】\n`;
-    } else if (state.researchType === 'postmarketing') {
-      text += `## 一、研究背景与法规依据\n`;
-      text += `【待补充：药品获批背景与新安全信号、FDA 505(o)(3)要求依据】\n\n`;
-      text += `## 二、研究目的\n`;
-      text += `**主要目的**：${state.primaryEndpoint || '【待补充】'}\n\n`;
-      text += `## 三、研究设计与方法\n`;
-      text += `- 研究类型：${typeName}\n`;
-      text += `- 研究设计：${designName}\n`;
-      text += `- 样本量：${state.sampleSize || '【待估算】'}例\n\n`;
-      text += `## 四、研究时间表与里程碑\n`;
-      text += `【待补充：方案提交、首例入组、末例随访、最终报告日期】\n\n`;
-      text += `## 五、数据收集与统计分析\n`;
-      text += `【待补充】\n\n`;
-      text += `## 六、伦理与参与者保护\n`;
-      text += `【待补充】\n\n`;
-      text += `## 七、研究进展报告要求\n`;
-      text += `【待补充：年度报告内容、入组进度报告】\n`;
-    } else if (isDomestic) {
-      text += `## 一、研究背景与立项依据\n`;
-      text += `【待补充：国内外研究现状、证据缺口】\n\n`;
-      text += `## 二、研究目的\n`;
-      text += `**主要目的**：${state.primaryEndpoint || '【待补充】'}\n\n`;
-      text += `## 三、研究设计\n`;
-      text += `- 研究类型：${typeName}\n`;
-      text += `- 研究设计：${designName}\n`;
-      text += `- 研究中心：${state.centerType === 'multi' ? `多中心（${state.centerCount || 'X'}家）` : '单中心'}\n`;
-      text += `- 样本量：${state.sampleSize || '【待估算】'}例\n\n`;
-      text += `## 四、研究人群\n`;
-      text += `### 4.1 纳入标准\n【待补充】\n\n### 4.2 排除标准\n【待补充】\n\n`;
-      text += `## 五、干预方案\n`;
-      text += `- 试验组：${state.intervention || '【待补充】'}\n`;
-      text += `- 对照组：${state.control || '【待补充】'}\n\n`;
-      text += `## 六、疗效与安全性评价\n【待补充】\n\n`;
-      text += `## 七、不良事件管理\n【待补充】\n\n`;
-      text += `## 八、数据管理与统计分析\n【待补充】\n\n`;
-      text += `## 九、伦理与受试者保护\n【待补充】\n\n`;
-      text += `## 参考文献\n【待补充】\n`;
-    } else {
-      text += `# ${projectName}\n\n`;
-      text += `**Study Type**: ${typeName}\n`;
-      text += `**Design**: ${designName}\n\n`;
-      text += `## 1. Introduction & Rationale\n【TBD】\n\n`;
-      text += `## 2. Objectives & Endpoints\n`;
-      text += `**Primary Endpoint**: ${state.primaryEndpoint || '[TBD]'}\n\n`;
-      text += `## 3. Study Design\n【TBD】\n\n`;
-      text += `## 4. Study Population\n【TBD】\n\n`;
-      text += `## 5. Interventions\n【TBD】\n\n`;
-      text += `## 6. Statistical Considerations\n【TBD】\n\n`;
-      text += `## 7. Ethics & Regulatory\n【TBD】\n`;
-    }
-  } else {
-    text += `# ${projectName}\n\n`;
-    text += `**Study Type**: ${typeName}\n`;
-    text += `**Design**: ${designName}\n`;
-    text += `**Sponsor**: ${i18n.sponsor[state.sponsorType].en}\n\n`;
-    text += `## 1. Introduction & Rationale\n【TBD】\n\n`;
-    text += `## 2. Objectives & Endpoints\n`;
-    text += `**Primary Endpoint**: ${state.primaryEndpoint || '[TBD]'}\n\n`;
-    text += `## 3. Study Design\n`;
-    text += `- Type: ${typeName}\n`;
-    text += `- Design: ${designName}\n`;
-    text += `- Centers: ${state.centerType === 'multi' ? `Multi-center (${state.centerCount || 'X'})` : 'Single-center'}\n`;
-    text += `- Sample Size: ${state.sampleSize || '[TBD]'}\n\n`;
-    text += `## 4. Study Population\n【TBD】\n\n`;
-    text += `## 5. Interventions\n`;
-    text += `- Treatment: ${state.intervention || '[TBD]'}\n`;
-    text += `- Control: ${state.control || '[TBD]'}\n\n`;
-    text += `## 6. Statistical Considerations\n【TBD】\n\n`;
-    text += `## 7. Ethics & Regulatory\n【TBD】\n`;
-  }
-
-  return text;
+/* 方案正文：单一内容源（预览 / 复制 / 导出完全一致） */
+function dpProtocolHtml(zh) { return buildProtocolWord(zh); }
+function dpStripTags(x) { return String(x).replace(/<[^>]+>/g, ''); }
+function htmlToPlainText(html) {
+  return String(html)
+    .replace(/<h2[^>]*>([\s\S]*?)<\/h2>/g, (m, t) => '\n\n## ' + dpStripTags(t).trim() + '\n')
+    .replace(/<h3[^>]*>([\s\S]*?)<\/h3>/g, (m, t) => '\n### ' + dpStripTags(t).trim() + '\n')
+    .replace(/<li[^>]*>([\s\S]*?)<\/li>/g, (m, t) => '\n- ' + dpStripTags(t).trim())
+    .replace(/<tr[^>]*>/g, '\n| ')
+    .replace(/<\/(td|th)>/g, ' | ')
+    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/<\/p>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
+function generateProtocolText() { return htmlToPlainText(dpProtocolHtml(state.lang === 'zh')); }
 
-// 生成预览
 function generatePreview() {
   collectFormData();
 
@@ -1949,12 +1904,8 @@ function generatePreview() {
     </div>
   `;
 
-  // 方案预览
-  const protocolText = generateProtocolText();
-  document.getElementById('protocol-preview').innerHTML = protocolText
-    .replace(/^# (.*)$/m, '<div class="section"><span class="section-title">$1</span></div>')
-    .replace(/^## (.*)$/gm, '<div class="section"><span class="section-title">$1</span></div>')
-    .replace(/\n/g, '<br>');
+  // 方案预览（与导出使用同一内容源）
+  document.getElementById('protocol-preview').innerHTML = dpProtocolHtml(state.lang === 'zh');
 
   // 核查清单
   const checklistEl = document.getElementById('checklist-preview');
@@ -2246,6 +2197,22 @@ function calcSS() {
   const total = twoGroup ? perGroup * 2 : perGroup;
   const inflated = Math.ceil(total / (1 - dropout));
   const zh = state.lang === 'zh';
+  /* 记录估算依据，供方案正文「样本量」章节引用（可追溯） */
+  const alphaMap = { '1.96': ['双侧 α=0.05', 'two-sided α=0.05'], '1.645': ['单侧 α=0.05', 'one-sided α=0.05'], '2.576': ['双侧 α=0.01', 'two-sided α=0.01'] };
+  const powerMap = { '0.842': 0.8, '1.282': 0.9 };
+  const methodMap = {
+    means: ['两样本均数比较', 'two-sample means comparison'],
+    proportions: ['两样本率比较', 'two-sample proportions comparison'],
+    noninferiority: ['非劣效性检验（率）', 'non-inferiority test for proportions'],
+    onesample: ['单样本率检验', 'one-sample proportion test']
+  };
+  const aTxt = alphaMap[String(za)] || ['α=' + za, 'α=' + za];
+  state.ssRecord = {
+    methodZh: methodMap[m][0], methodEn: methodMap[m][1],
+    alphaZh: aTxt[0], alphaEn: aTxt[1],
+    power: powerMap[String(zb)] || 0.8,
+    desc: desc, perGroup: perGroup, total: total, inflated: inflated, twoGroup: twoGroup
+  };
   const res = document.getElementById('ss-result');
   res.innerHTML = `
     <div>${zh ? '参数' : 'Parameters'}：${desc} ｜ α z=${za}, 1-β z=${zb}</div>
@@ -2337,8 +2304,7 @@ function buildCover(zh, title) {
 }
 function buildSynopsis(zh) {
   const S = state;
-  return `<h2>${zh ? '研究摘要' : 'Synopsis'}</h2>
-<table>
+  return `<table>
 <tr><th style="width:28%">${zh ? '研究题目' : 'Title'}</th><td>${esc(S.projectName) || ph()}</td></tr>
 <tr><th>${zh ? '研究类型 / 设计' : 'Type / Design'}</th><td>${i18n.type[S.researchType]?.[state.lang] || ''} / ${i18n.design[S.researchDesign]?.[state.lang] || ''}</td></tr>
 <tr><th>${zh ? '适应症 / 研究领域' : 'Indication'}</th><td>${esc(S.disease) || ph()}</td></tr>
@@ -2348,133 +2314,745 @@ function buildSynopsis(zh) {
 <tr><th>${zh ? '样本量' : 'Sample Size'}</th><td>${esc(S.sampleSize) || ph(zh ? '待估算' : 'TBD')} ${zh ? '例' : ''}</td></tr>
 </table>`;
 }
+/* ==========================================================================
+   深度内容生成器：把「章节骨架 + 占位」升级为「可评审的初稿」
+   —— 通用方法学论述直接成文（真实、可直接沿用）；
+   —— 疾病特异性事实以【待补充：…】精确标注，说明"该填什么、填到什么颗粒度"。
+   ========================================================================== */
+const dpT = (zh, a, b) => (zh ? a : b);
+function dpPH(zh, t) {
+  return zh ? `<span class="placeholder">【待补充：${esc(t)}】</span>` : `<span class="placeholder">[TBD: ${esc(t)}]</span>`;
+}
+function dpV(v, zh, t) {
+  const s = String(v == null ? '' : v).trim();
+  return s ? esc(s) : dpPH(zh, t);
+}
+function dpP(t) { return `<p>${t}</p>`; }
+function dpUL(a) { return '<ul>' + a.filter(Boolean).map(i => `<li>${i}</li>`).join('') + '</ul>'; }
+function dpTbl(head, rows, w) {
+  const h = '<tr>' + head.map((c, i) => `<th${w && w[i] ? ` style="width:${w[i]}%"` : ''}>${c}</th>`).join('') + '</tr>';
+  const b = rows.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
+  return `<table>${h}${b}</table>`;
+}
+const dpDz = zh => dpV(state.disease, zh, dpT(zh, '研究疾病／适应症', 'Indication'));
+const dpIv = zh => dpV(state.intervention, zh, dpT(zh, '试验组干预（药品／器械／技术名称、剂量、途径、疗程）', 'Investigational intervention'));
+const dpCt = zh => dpV(state.control, zh, dpT(zh, '对照组干预（安慰剂／阳性对照／标准治疗）', 'Control intervention'));
+const dpEp = zh => dpV(state.primaryEndpoint, zh, dpT(zh, '主要终点（含测量工具与时点）', 'Primary endpoint'));
+const dpN = zh => dpV(state.sampleSize, zh, dpT(zh, '样本量', 'Sample size'));
+const dpDg = zh => (i18n.design[state.researchDesign] && i18n.design[state.researchDesign][state.lang]) || dpT(zh, '研究设计', 'design');
+const dpCenters = zh => state.centerType === 'multi'
+  ? dpT(zh, `多中心（ ${state.centerCount || 'X'} 家中心）`, `multi-center study (${state.centerCount || 'X'} sites)`)
+  : dpT(zh, '单中心', 'single-center');
+/* 样本量估算依据：优先引用估算器记录 */
+function dpSSBasis(zh) {
+  const r = state.ssRecord;
+  if (r) {
+    return dpT(zh,
+      `采用${r.methodZh}的正态近似公式估算。设定${r.alphaZh}，检验效能 1-β=${(r.power * 100).toFixed(0)}%，参数为 ${esc(r.desc)}；计算得${r.twoGroup ? '每组' : ''} ${r.perGroup} 例${r.twoGroup ? `，两组合计 ${r.total} 例` : ''}。考虑 ${(r.dropout * 100).toFixed(0)}% 的脱落与方案违背，校正后需 ${r.inflated} 例；结合筛选失败与随访完整性预留，最终计划入组 ${dpN(zh)} 例。`,
+      `Sample size was calculated using the normal approximation for ${r.methodEn}. With ${r.alphaEn}, power 1-β=${(r.power * 100).toFixed(0)}% and ${esc(r.desc)}, the required number was ${r.perGroup} ${r.twoGroup ? 'per group' : 'in total'}${r.twoGroup ? ` (${r.total} in total)` : ''}. Allowing ${(r.dropout * 100).toFixed(0)}% dropout, ${r.inflated} subjects will be enrolled.`);
+  }
+  return dpT(zh,
+    `样本量基于主要终点「${dpEp(zh)}」估算，采用${dpPH(zh, '所用公式（如两样本率比较／均数比较／非劣效／生存分析 log-rank）')}，设定${dpPH(zh, 'α 水准与单双侧')}、检验效能${dpPH(zh, '80% 或 90%')}、预期效应值${dpPH(zh, '组间差值或率差及其文献依据')}、变异度${dpPH(zh, 'σ 或预期率')}，并考虑${dpPH(zh, '脱落率，通常 10%~20%')}的脱落校正，最终计划入组 ${dpN(zh)} 例。估算参数须由统计师复核后确认。`,
+    `The sample size is based on the primary endpoint "${dpEp(zh)}" using ${dpPH(zh, 'formula')} with ${dpPH(zh, 'alpha, one/two-sided')}, power ${dpPH(zh, '80%/90%')}, expected effect ${dpPH(zh, 'difference and its source')}, and ${dpPH(zh, 'dropout rate')} dropout allowance; planned N = ${dpN(zh)}. Assumptions must be confirmed by a biostatistician.`);
+}
+
+/* ---------------- 通用章节 ---------------- */
+function dpBackground(zh) {
+  if (!zh) {
+    return dpP(`${dpDz(zh)} represents a substantial disease burden, being a leading cause of ${dpPH(zh, 'morbidity/mortality/disability')}. According to ${dpPH(zh, 'authoritative source: GBD, national report, key publications within 5 years')}, the ${dpPH(zh, 'incidence/prevalence/disability rate')} is ${dpPH(zh, 'value')}.`)
+      + dpP(`Current standard of care relies on ${dpCt(zh)}, which provides ${dpPH(zh, 'main benefit')} but leaves ${dpPH(zh, 'proportion')} of patients with unsatisfactory outcomes — a clear unmet medical need.`)
+      + dpP(`${dpIv(zh)} acts through ${dpPH(zh, 'mechanism of action')}. Preclinical and early-phase data suggest ${dpPH(zh, 'efficacy signal and safety profile')}.`)
+      + dpP(`However, existing evidence is limited by ${dpPH(zh, 'small sample, single centre, lack of blinding/control, short follow-up, inconsistent endpoints')}. High-quality randomised evidence on ${dpPH(zh, 'efficacy and safety')} in this population is therefore required.`)
+      + dpP(`This study will employ ${dpDg(zh)} with ${dpEp(zh)} as the primary endpoint to evaluate ${dpIv(zh)} versus ${dpCt(zh)}, informing ${dpPH(zh, 'clinical decision-making / standard of care / confirmatory trial design')}.`);
+  }
+  return dpP(`<b>${dpDz(zh)}</b>疾病负担沉重，是导致患者${dpPH(zh, '主要致残／致死／功能丧失')}的重要原因之一。据${dpPH(zh, '权威来源：GBD、国家级疾病报告、近 5 年核心期刊文献')}，我国该病${dpPH(zh, '患病率／发病率／致残率等关键数据')}，且随人口老龄化与危险因素流行呈持续上升趋势，对社会与家庭造成显著经济与照护负担。`)
+    + dpP(`目前${dpDz(zh)}的标准治疗以${dpCt(zh)}为主，可在一定程度上${dpPH(zh, '主要疗效获益（如降低死亡／致残、改善功能预后）')}；但临床实践中仍有${dpPH(zh, '未满足需求的比例，如 30%~40% 患者预后不良')}的患者未能获得满意结局，存在明确的未被满足的临床需求。`)
+    + dpP(`${dpIv(zh)}主要通过${dpPH(zh, '药理／作用机制，如改善微循环、抗炎、神经保护、代谢调节等')}发挥治疗作用。既往${dpPH(zh, '体外研究／动物模型／Ⅰ—Ⅱ期临床研究')}结果显示，其可能${dpPH(zh, '主要疗效信号与安全性特征')}，为该适应证下的进一步验证提供了生物学与早期临床依据。`)
+    + dpP(`然而，现有证据仍存在以下局限：${dpPH(zh, '样本量小、多为单中心、缺乏盲法与同期对照、随访时间短、终点定义不统一、缺乏硬终点验证')}。因此，${dpIv(zh)}在${dpDz(zh)}患者中的${dpPH(zh, '疗效与安全性')}尚需设计严谨的${dpDg(zh)}予以确证。`)
+    + dpP(`基于上述证据缺口，本研究拟以${dpEp(zh)}为主要疗效指标，系统评价${dpIv(zh)}相较于${dpCt(zh)}的${dpPH(zh, '优效性／非劣效性／安全性')}，并观察其对${dpPH(zh, '次要终点（功能预后、生活质量、医疗资源使用等）')}的影响，为${dpPH(zh, '临床用药决策／诊疗规范制定／后续确证性研究')}提供高质量证据。`);
+}
+
+function dpObjectives(zh) {
+  const o = [];
+  o.push(`<h3>${dpT(zh, '主要目的', 'Primary objective')}</h3>` + dpP(dpT(zh,
+    `评价${dpIv(zh)}相较于${dpCt(zh)}在${dpDz(zh)}患者中改善「${dpEp(zh)}」的${dpPH(zh, '优效性／非劣效性')}。`,
+    `To evaluate the ${dpPH(zh, 'superiority/non-inferiority')} of ${dpIv(zh)} versus ${dpCt(zh)} on "${dpEp(zh)}" in patients with ${dpDz(zh)}.`)));
+  o.push(`<h3>${dpT(zh, '次要目的', 'Secondary objectives')}</h3>` + (linesOf(state.secondaryEndpoints).length
+    ? dpUL(linesOf(state.secondaryEndpoints).map(e => esc(e)))
+    : dpUL([dpT(zh,
+      `评价${dpIv(zh)}对${dpPH(zh, '次要疗效指标（如神经功能、生活质量、复发率）')}的影响；`,
+      `To evaluate effects on ${dpPH(zh, 'secondary endpoints')};`),
+      dpT(zh, `评价${dpIv(zh)}在目标人群中的安全性，包括不良事件、严重不良事件、实验室异常与生命体征变化的发生情况；`, 'To assess safety.'),
+      dpT(zh, `描述${dpPH(zh, '亚组人群（如年龄、病情严重程度、基线特征）')}的疗效一致性。`, 'To explore consistency across subgroups.')])));
+  o.push(`<h3>${dpT(zh, '探索性目的', 'Exploratory objectives')}</h3>` + dpUL([dpT(zh,
+    `探索${dpPH(zh, '疗效相关的潜在生物标志物／药效学指标／剂量—效应关系')}；`,
+    `To explore ${dpPH(zh, 'biomarkers / PD markers / dose-response')};`),
+    dpT(zh, `探索${dpIv(zh)}对${dpPH(zh, '患者报告结局（PRO）、照护负担、住院时长')}的影响。`, 'To explore patient-reported outcomes.')]));
+  o.push(`<h3>${dpT(zh, '研究假设', 'Hypothesis')}</h3>` + dpP(dpT(zh,
+    `本研究假设：与${dpCt(zh)}相比，${dpIv(zh)}可改善${dpDz(zh)}患者的「${dpEp(zh)}」，预期组间差异为 ${dpPH(zh, '预期效应量及其依据（前期研究／文献 meta 分析）')}，且安全性可接受。该假设对应主分析中的原假设 H₀：两组主要终点无差异；备择假设 H₁：两组存在差异，采用${dpPH(zh, '双侧 α=0.05')}检验水准。`,
+    `Hypothesis: compared with ${dpCt(zh)}, ${dpIv(zh)} improves "${dpEp(zh)}" with an expected between-group difference of ${dpPH(zh, 'effect size and source')}, with acceptable safety (H0: no difference; H1: difference; two-sided α=0.05).`))
+    + `<h3>${dpT(zh, '成功标准与结果解读规则', 'Success criteria & interpretation')}</h3>` + dpP(dpT(zh,
+      `主要终点达到预设的统计学差异（P＜0.05）且效应方向与临床意义一致，判定研究达到主要目的；若主要终点差异未达统计学显著但呈一致趋势，结果将作为后续研究的效应量依据，不作有效性结论。次要终点与亚组分析结果仅作支持性解释，不单独作为有效性证据。无论结果方向如何，研究结果均按要求公开报告。`,
+      `The study is considered successful if the primary endpoint reaches statistical significance with a direction consistent with clinical benefit; otherwise results inform future sample-size assumptions without a claim of efficacy.`)));
+  return o.join('');
+}
+
+function dpDesignCore(zh) {
+  const s = [];
+  s.push(`<h3>${dpT(zh, '研究总体设计', 'Overall design')}</h3>` + dpP(dpT(zh,
+    `研究设计为「${dpDg(zh)}」，采用${dpT(zh, '前瞻性', 'prospective')}、${dpCenters(zh)}设计，计划入组 ${dpN(zh)} 例${dpDz(zh)}患者，按${dpPH(zh, '1:1')}比例随机分配至试验组与对照组，研究总周期预计 ${dpPH(zh, 'X 个月（含入组期与随访期）')}。`,
+    `This is a ${dpDg(zh)}, ${dpCenters(zh)}, prospective study enrolling ${dpN(zh)} patients with ${dpDz(zh)}, randomised ${dpPH(zh, '1:1')} to treatment or control.`)));
+  s.push(`<h3>${dpT(zh, '研究现场与研究人群来源', 'Setting')}</h3>` + dpP(dpT(zh,
+    `研究在${dpCenters(zh)}开展，受试者主要来源于${dpPH(zh, '门诊／急诊／住院部，说明各中心年诊疗量与目标人群可及性')}。各中心须具备${dpPH(zh, '相应诊疗资质、急救条件、样本处理与储存能力、专职研究团队')}，并在启动前完成方案培训与一致性评估。`,
+    `The study is conducted at ${dpCenters(zh)}; participants are recruited from ${dpPH(zh, 'outpatient/emergency/inpatient settings')}.`)));
+  s.push(`<h3>${dpT(zh, '随机化与分配隐藏', 'Randomisation & allocation concealment')}</h3>` + dpP(dpT(zh,
+    `随机分配序列由不参与研究实施与统计分析的独立统计人员采用 ${dpPH(zh, 'SAS 9.4／R 4.3')} 生成，采用${dpPH(zh, '区组随机（区组长度 4）／分层随机（分层因素：中心、病情严重程度）')}。分配隐藏通过${dpPH(zh, '中央随机化系统（IWRS）／按顺序编号的密封不透光信封')}实现，研究者仅在受试者完成全部入选标准核查并签署知情同意后方可获取分配结果。`,
+    `The allocation sequence is generated by an independent statistician using ${dpPH(zh, 'SAS/R')} with ${dpPH(zh, 'blocked/stratified randomisation')}; concealment is ensured by ${dpPH(zh, 'IWRS/sealed opaque envelopes')}.`)));
+  s.push(`<h3>${dpT(zh, '设盲与破盲', 'Blinding & unblinding')}</h3>` + dpP(dpT(zh,
+    `本研究采用${dpPH(zh, '双盲双模拟／单盲／开放标签设计（请按可行性选定并说明理由）')}。${dpPH(zh, '双盲时：试验药与安慰剂在外观、颜色、气味、包装上保持一致，由不参与评价的独立药师按随机号发药。')}受试者、研究者、疗效评价者及统计人员均保持盲态，直至数据库锁定并完成统计分析。紧急情况下（如 SAE 需明确用药以指导救治），研究者可在个案层面破盲，破盲须记录时间、原因与获知人员，并立即报告申办方；提前破盲的受试者继续接受安全性随访，其疗效数据不纳入符合方案集。`,
+    `A ${dpPH(zh, 'double-blind double-dummy / single-blind / open-label')} design is used. Emergency unblinding is permitted at individual level with documentation; such subjects remain in safety follow-up and are excluded from the per-protocol set.`)));
+  s.push(`<h3>${dpT(zh, '干预分组与疗程', 'Treatment groups & duration')}</h3>` + dpTbl(
+    [dpT(zh, '组别', 'Group'), dpT(zh, '干预措施', 'Intervention'), dpT(zh, '给药方式与疗程', 'Route & duration')],
+    [[dpT(zh, '试验组', 'Treatment'), dpIv(zh), dpPH(zh, '剂量／频次／途径／疗程')],
+     [dpT(zh, '对照组', 'Control'), dpCt(zh), dpPH(zh, '剂量／频次／途径／疗程')]], [16, 44, 40]));
+  s.push(`<h3>${dpT(zh, '研究流程与访视计划（SoA）', 'Study flow & Schedule of Activities')}</h3>` + dpP(dpT(zh,
+    `研究流程分为筛选期、基线／随机化、治疗期、治疗结束访视与随访期，各访视时间窗原则上不超过 ${dpPH(zh, '±3 天（请按终点测量要求设定）')}。`, 'The study comprises screening, baseline/randomisation, treatment, end-of-treatment and follow-up visits.'))
+    + dpTbl([dpT(zh, '访视', 'Visit'), dpT(zh, '时间窗', 'Window'), dpT(zh, '主要操作', 'Key procedures')], [
+      [dpT(zh, '筛选期 V0', 'Screening'), dpT(zh, '-7～0 天', 'D-7 to D0'), dpT(zh, '知情同意、入选/排除标准核查、人口学与病史、体格检查、生命体征、实验室检查、心电图、基线量表', 'ICF, eligibility, demographics, physical exam, vitals, labs, ECG, baseline scales')],
+      [dpT(zh, '基线／随机化 V1', 'Baseline'), dpT(zh, '第 0 天', 'Day 0'), dpT(zh, '随机化分组、首次给药、基线疗效评估、合并用药登记', 'Randomisation, first dose, baseline efficacy, concomitant medications')],
+      [dpT(zh, '治疗期访视 V2—Vn', 'Treatment'), dpPH(zh, '按方案设定（如 D3、D7、D14、D28）', 'per protocol'), dpT(zh, '给药、疗效评估、安全性检查、不良事件与合并用药记录、依从性核查', 'Dosing, efficacy, safety, AE/con-med records, adherence')],
+      [dpT(zh, '治疗结束 EOT', 'End of treatment'), dpT(zh, '末次给药后 ±3 天', '±3 days'), dpT(zh, '末次疗效评估、安全性检查、AE 转归判定', 'Final efficacy, safety, AE outcome')],
+      [dpT(zh, '随访期 F', 'Follow-up'), dpPH(zh, '如治疗后 30／90 天', 'e.g. Day 30/90'), dpT(zh, '疗效维持评价、复发/生存状态、AE 长期转归、终点事件裁定', 'Durability, recurrence/survival, AE outcome, endpoint adjudication')]
+    ], [18, 20, 62]));
+  return s.join('');
+}
+
+function dpPopulation(zh) {
+  const inc = linesOf(state.inclusionCriteria), exc = linesOf(state.exclusionCriteria);
+  return `<h3>${dpT(zh, '入选标准', 'Inclusion criteria')}</h3>`
+    + (inc.length ? dpUL(inc.map((x, i) => `(${i + 1}) ${esc(x)}`))
+      : dpUL([dpT(zh, `(1) 年龄 ${dpPH(zh, '18～75')} 岁，性别不限；`, '(1) Age ' + dpPH(zh, '18-75') + ' years;'),
+        dpT(zh, `(2) 符合${dpDz(zh)}诊断标准（依据${dpPH(zh, '指南／共识名称与版本')}），并经${dpPH(zh, '影像学／实验室／病理')}证实；`, '(2) Confirmed diagnosis per ' + dpPH(zh, 'guideline') + ';'),
+        dpT(zh, `(3) ${dpPH(zh, '病程／病情严重程度／既往治疗要求')}符合本研究目标人群定义；`, '(3) Meets disease severity/duration criteria;'),
+        dpT(zh, '(4) 自愿参加并签署知情同意书，能够理解并遵守研究流程。', '(4) Written informed consent.')]))
+    + `<h3>${dpT(zh, '排除标准', 'Exclusion criteria')}</h3>`
+    + (exc.length ? dpUL(exc.map((x, i) => `(${i + 1}) ${esc(x)}`))
+      : dpUL([dpT(zh, `(1) 对${dpIv(zh)}或其辅料过敏，或存在禁忌证；`, '(1) Contraindication/hypersensitivity;'),
+        dpT(zh, '(2) 合并严重心、肝、肾功能不全（' + dpPH(zh, '明确界定阈值，如 ALT＞3×ULN、eGFR＜30 mL/min') + '）；', '(2) Severe organ dysfunction;'),
+        dpT(zh, `(3) ${dpPH(zh, '妊娠／哺乳期，或研究期间不愿采取有效避孕措施')}；`, '(3) Pregnancy/lactation;'),
+        dpT(zh, `(4) 近 ${dpPH(zh, '3 个月')}内参加过其他干预性临床试验；`, '(4) Participation in another trial;'),
+        dpT(zh, '(5) 合并恶性肿瘤、严重精神疾病或其他预期寿命＜' + dpPH(zh, '6 个月') + '的疾病；', '(5) Life expectancy < ' + dpPH(zh, '6 months') + ';'),
+        dpT(zh, '(6) 研究者判断存在其他不适合参加本研究的情况。', '(6) Other conditions per investigator judgment.')]))
+    + `<h3>${dpT(zh, '退出、脱落与终止标准', 'Withdrawal & discontinuation')}</h3>`
+    + dpP(dpT(zh, '出现下列任一情形，受试者应退出研究干预（是否继续随访见括号说明）：', 'Subjects discontinue intervention if any of the following occurs:'))
+    + dpUL([dpT(zh, '受试者撤回知情同意（不再接受任何研究相关操作）；', 'Withdrawal of consent;'),
+      dpT(zh, '发生需永久停药的严重不良事件或严重过敏反应（继续安全性随访至事件转归）；', 'SAE requiring permanent discontinuation;'),
+      dpT(zh, '妊娠（立即停药并随访至妊娠结束）；', 'Pregnancy;'),
+      dpT(zh, '疾病进展或病情恶化需更换治疗方案（按方案转为挽救治疗并继续生存随访）；', 'Disease progression;'),
+      dpT(zh, `依从性差（服药／治疗依从率＜${dpPH(zh, '80%')}或＞${dpPH(zh, '120%')}）且经研究者评估无法纠正；`, 'Poor adherence;'),
+      dpT(zh, '严重方案违背（如误纳入不符合入选标准者）；', 'Major protocol deviation;'),
+      dpT(zh, '失访（连续 ' + dpPH(zh, '2 次') + ' 计划访视无法联系，且经 ' + dpPH(zh, '3 次') + ' 不同方式尝试后仍无法取得联系）；', 'Loss to follow-up;'),
+      dpT(zh, '研究者判断继续参与不符合受试者最佳利益；', 'Investigator judgment;'),
+      dpT(zh, '死亡。', 'Death.')])
+    + `<h3>${dpT(zh, '筛选失败与替补', 'Screen failures & replacement')}</h3>` + dpP(dpT(zh,
+      `筛选失败者不纳入分析集，其筛选期数据仅用于描述性报告。${dpPH(zh, '是否允许替补（如"允许按 1:1 替补至目标样本量"，或"不允许替补"）须在方案中预先明确并保持前后一致。')}`,
+      `Screen failures are not included in analysis sets. ${dpPH(zh, 'Replacement policy must be pre-specified.')}`))
+    + `<h3>${dpT(zh, '筛选与入组流程', 'Screening & enrolment workflow')}</h3>` + dpP(dpT(zh,
+      `受试者签署知情同意书后方可开始任何研究相关评估，筛选按以下顺序进行：（1）核对入选与排除标准，由研究者与 CRC 双人逐条核对并签字确认；（2）采集人口学资料、既往病史、合并用药与基线用药；（3）完成体格检查、生命体征、实验室检查、心电图及方案要求的影像学检查；（4）确认合格后分配受试者编号（格式：中心号-流水号，如 01-001），并在随机系统中登记、获取随机号与分配结果。`,
+      `Screening starts only after informed consent: eligibility is double-checked, baseline assessments are performed, and a subject number (site-serial) plus randomisation number is assigned.`))
+    + dpP(dpT(zh,
+      `临界值与复查规则：若某项检查结果处于临界范围或存在可疑干扰（如标本溶血、检查设备异常），允许在筛选时间窗内复查一次，以复查结果判定是否符合标准；复查仍不合格者判为筛选失败。筛选失败者不再进入随机化，其筛查数据仅用于描述性报告与入组可行性分析。`,
+      `Borderline results may be repeated once within the screening window; persistent failure results in screen failure.`))
+    + dpP(dpT(zh,
+      `入组速率管理：按预期筛选失败率 ${dpPH(zh, '20%~30%')} 倒推，各中心需维持约 ${dpPH(zh, '1.3 倍')} 目标样本量的候选受试者池；入组进度按月汇总并以筛选—随机转化率、月均入组例数作为关键风险指标（KRI），低于阈值时启动增补中心或延长入组期。`,
+      `Screening-to-randomisation conversion and monthly enrolment rate are monitored as KRIs with pre-defined triggers.`));
+}
+
+function dpIntervention(zh) {
+  return `<h3>${dpT(zh, '试验用药（器械／技术）', 'Investigational product')}</h3>`
+    + dpUL([dpT(zh, `名称与规格：${dpIv(zh)}；`, 'Name & specification: ' + dpIv(zh) + ';'),
+      dpT(zh, `批号与有效期：${dpPH(zh, '由申办方提供，逐批记录；研究期间使用同一批次以减少批间差异')}；`, 'Batch & expiry: ' + dpPH(zh, 'recorded per batch') + ';'),
+      dpT(zh, `给药途径、剂量与频次：${dpPH(zh, '如静脉滴注、每日 1 次、每次 X mg，滴注时间 ≥60 min')}；`, 'Route/dose/frequency: ' + dpPH(zh, 'e.g. IV infusion once daily') + ';'),
+      dpT(zh, `疗程：${dpPH(zh, '如连续 14 天')}；`, 'Duration: ' + dpPH(zh, '14 days') + ';')])
+    + `<h3>${dpT(zh, '对照用药', 'Comparator')}</h3>` + dpP(dpT(zh,
+      `对照组给予${dpCt(zh)}。${dpPH(zh, '若为安慰剂：说明与试验药在外观、颜色、气味、体积、包装上的一致性及双模拟实现方式；若为阳性对照：说明选择依据（现行标准治疗、相同适应证获批、剂量与用法依据说明书）。')}`,
+      `Control group receives ${dpCt(zh)}. ${dpPH(zh, 'Specify placebo matching or rationale for active comparator and dose.')}`))
+    + `<h3>${dpT(zh, '剂量调整与停药规则', 'Dose modification')}</h3>`
+    + dpTbl([dpT(zh, '情形', 'Condition'), dpT(zh, '处理措施', 'Action')], [
+      [dpT(zh, '轻度不良事件（CTCAE 1 级）', 'Grade 1 AE'), dpT(zh, '维持原剂量，加强监测，对症处理', 'Continue with monitoring')],
+      [dpT(zh, '中度不良事件（CTCAE 2 级）', 'Grade 2 AE'), dpT(zh, `暂停给药至恢复至 ${dpPH(zh, '≤1 级')}后按原剂量重启；同一受试者累计暂停超过 ${dpPH(zh, '2 次')} 者永久停药`, 'Interrupt until resolution, then resume; permanent discontinuation after repeated interruptions')],
+      [dpT(zh, '重度不良事件（CTCAE ≥3 级）或严重不良事件', 'Grade ≥3 AE / SAE'), dpT(zh, '永久停药，按 SAE 流程报告并随访至转归', 'Permanent discontinuation; SAE reporting and follow-up')],
+      [dpT(zh, '实验室指标显著异常', 'Significant lab abnormality'), dpT(zh, `${dpPH(zh, '如 ALT/AST＞5×ULN 或总胆红素＞2×ULN：停药并复查，必要时终止')}`, 'Per pre-specified thresholds')]
+    ], [34, 66])
+    + `<h3>${dpT(zh, '合并用药', 'Concomitant medication')}</h3>`
+    + dpP(dpT(zh, '允许用药：', 'Permitted: ')) + dpUL([dpT(zh, `${dpPH(zh, '针对基础疾病与合并症的标准治疗（如抗血小板、降压、降糖、调脂）')}，须在研究期间保持剂量稳定；`, dpPH(zh, 'Standard care for comorbidities, kept stable') + ';'),
+      dpT(zh, '对症处理不良事件所需的药物（须记录名称、剂量、起止时间与原因）。', 'Medication for AE management (recorded).')])
+    + dpP(dpT(zh, '禁止用药：', 'Prohibited: ')) + dpUL([dpT(zh, `${dpPH(zh, '与研究药物存在已知相互作用的药物、同类机制药物、其他研究性药物')}；`, dpPH(zh, 'Interacting or same-class drugs, other investigational agents') + ';'),
+      dpT(zh, `研究期间不得使用${dpPH(zh, '其他说明书中提示与本研究干预存在叠加毒性或拮抗作用的治疗')}。`, 'Other contraindicated therapies.')])
+    + dpP(dpT(zh, `所有合并用药须在 CRF 中完整记录，并在统计分析中作为描述性内容报告；对可能影响主要终点的合并用药，将在敏感性分析中予以校正。`, 'All concomitant medications are recorded and reported; those affecting the primary endpoint are adjusted in sensitivity analyses.'))
+    + `<h3>${dpT(zh, '依从性管理', 'Adherence')}</h3>` + dpP(dpT(zh,
+      `口服制剂采用药物计数法评估依从性：依从率＝（实际服用量／应服用量）×100%，依从率在 ${dpPH(zh, '80%~120%')} 区间视为依从良好。静脉或皮下给药由研究护士在给药记录单上逐次签核，视为 100% 依从。依从性差且无法纠正者，按退出标准处理，并在符合方案集定义中预先规定处理方式。`,
+      `Adherence is assessed by pill counting (acceptable range ${dpPH(zh, '80-120%')}) or by injection records; poorly adherent subjects are handled per pre-specified rules.`))
+    + `<h3>${dpT(zh, '研究用药品管理', 'IP management')}</h3>` + dpP(dpT(zh,
+      `研究用药品由申办方按 ${dpPH(zh, 'GSP 要求')} 配送至各中心药房，专人、专柜、加锁、专区存放，${dpPH(zh, '按储存条件（如 2~8℃ 避光）')}保存并逐日记录温湿度。发药与回收均须双人核对并登记，剩余药品及空包装在监查员核对后按机构规定销毁或退回，全程留痕。`,
+      `IP is stored under controlled conditions with daily temperature logs; dispensing, returns and destruction are double-checked and documented.`));
+}
+
+function dpOutcomes(zh) {
+  return `<h3>${dpT(zh, '主要终点', 'Primary endpoint')}</h3>` + dpP(dpT(zh,
+    `主要疗效终点为「<b>${dpEp(zh)}</b>」。测量工具与判定标准：${dpPH(zh, '量表／实验室指标／影像判读标准，含版本号')}；评估时点：${dpPH(zh, '治疗后 X 周／天')}；评估者：${dpPH(zh, '由不知晓分组的研究者或独立盲态评价委员会统一评估')}。终点事件须由独立终点裁定委员会（EAC）在盲态下依据预设标准裁定，裁定结果作为主要分析依据。`,
+    `Primary endpoint: "${dpEp(zh)}", assessed with ${dpPH(zh, 'instrument/definition')} at ${dpPH(zh, 'timepoint')}, adjudicated blind by an independent endpoint committee.`))
+    + `<h3>${dpT(zh, '次要终点', 'Secondary endpoints')}</h3>`
+    + (linesOf(state.secondaryEndpoints).length
+      ? dpUL(linesOf(state.secondaryEndpoints).map(e => `${esc(e)}：${dpPH(zh, '测量工具、时点与判定标准')}`))
+      : dpUL([dpT(zh, `${dpPH(zh, '功能预后指标（如 mRS、NIHSS、ADL 量表）')}：于 ${dpPH(zh, '基线、治疗结束、随访期末')} 评估；`, dpPH(zh, 'Functional outcome scale') + ';'),
+        dpT(zh, `${dpPH(zh, '生活质量量表（如 EQ-5D、SF-36）')}：评价患者报告结局；`, dpPH(zh, 'QoL scale') + ';'),
+        dpT(zh, `${dpPH(zh, '医疗资源使用（住院天数、再入院率、ICU 入住）')}：用于卫生经济学探索。`, dpPH(zh, 'Healthcare utilisation') + '.')]))
+    + `<h3>${dpT(zh, '安全性终点', 'Safety endpoints')}</h3>` + dpUL([
+      dpT(zh, '不良事件（AE）与严重不良事件（SAE）的发生率、严重程度、与研究干预的相关性及转归；', 'Incidence, severity, causality and outcome of AEs/SAEs;'),
+      dpT(zh, `生命体征、体格检查、12 导联心电图变化；`, 'Vital signs, physical examination, 12-lead ECG;'),
+      dpT(zh, `${dpPH(zh, '血常规、肝肾功能、电解质、凝血功能')}等实验室指标异常（按 CTCAE v5.0 分级）；`, 'Laboratory abnormalities graded by CTCAE v5.0;'),
+      dpT(zh, '因不良事件导致的停药率、剂量调整率；', 'Discontinuation and dose-modification rates due to AEs;'),
+      dpT(zh, `${dpPH(zh, '特殊关注的不良事件（AESI），如出血转化、过敏反应、肝肾损伤')}的专项监测。`, 'AESI of special interest.')])
+    + `<h3>${dpT(zh, '终点测量的一致性保障', 'Assessment consistency')}</h3>` + dpP(dpT(zh,
+      `所有参与终点评估的研究者须在启动会完成${dpPH(zh, '量表一致性培训（如 NIHSS、mRS 评分一致性测试，Kappa≥0.8 为合格）')}；同一受试者的随访评估尽可能由同一评估者完成；影像与实验室检查在中心实验室统一检测，以减少中心间变异。`,
+      `Assessors complete consistency training (e.g. NIHSS/mRS, kappa ≥0.8); central laboratory is used to reduce inter-site variability.`));
+}
+
+function dpSafetyEval(zh) {
+  return dpP(dpT(zh,
+    `安全性评价贯穿筛选期至末次随访。研究者须在每次访视时系统询问并记录不良事件，评估其严重程度、与研究干预的相关性，并随访至事件转归或稳定。所有安全性数据由独立的数据安全监查委员会（DSMB）${dpPH(zh, '按预设节点（如入组 30%、50%、100%）')}审阅。`,
+    `Safety is assessed from screening to final follow-up; all events are followed to resolution and reviewed by a DSMB ${dpPH(zh, 'at pre-specified milestones')}.`))
+    + dpTbl([dpT(zh, '评价项目', 'Assessment'), dpT(zh, '时点', 'Timing'), dpT(zh, '判定标准', 'Criteria')], [
+      [dpT(zh, '不良事件', 'AEs'), dpT(zh, '全程持续', 'Continuous'), 'CTCAE v5.0 ' + dpT(zh, '分级', 'grade')],
+      [dpT(zh, '生命体征', 'Vital signs'), dpT(zh, '每次访视', 'Each visit'), dpT(zh, '与基线比较的临床显著变化', 'Clinically significant change')],
+      [dpT(zh, '实验室检查', 'Laboratory'), dpPH(zh, '筛选、治疗期、EOT、随访', 'per SoA'), dpT(zh, '超出参考范围且有临床意义者记为 AE', 'Out-of-range with clinical significance = AE')],
+      [dpT(zh, '心电图', 'ECG'), dpPH(zh, '筛选、治疗结束', 'Screening, EOT'), dpT(zh, 'QTc 延长等按预设阈值判定', 'Pre-specified QTc thresholds')],
+      [dpT(zh, '合并用药', 'Concomitant meds'), dpT(zh, '全程', 'Continuous'), dpT(zh, '记录并评估潜在相互作用', 'Record and assess interaction')]
+    ], [26, 30, 44]);
+}
+
+function dpAE(zh) {
+  return `<h3>${dpT(zh, '定义', 'Definitions')}</h3>` + dpUL([
+    dpT(zh, '<b>不良事件（AE）</b>：受试者接受研究干预后出现的任何不良医学事件，不一定与干预存在因果关系。', '<b>AE</b>: any untoward medical occurrence, not necessarily causally related.'),
+    dpT(zh, '<b>严重不良事件（SAE）</b>：导致死亡、危及生命、需住院或延长住院、导致持续或显著的功能丧失/残疾、先天性异常/出生缺陷，或需医学干预以避免上述后果的重要医学事件。', '<b>SAE</b>: death, life-threatening, hospitalisation/prolongation, persistent disability, congenital anomaly, or important medical event.'),
+    dpT(zh, '<b>可疑且非预期严重不良反应（SUSAR）</b>：与干预存在合理可能因果关系且性质或严重程度超出参考安全性信息（如说明书）的 SAE。', '<b>SUSAR</b>: suspected unexpected serious adverse reaction.')])
+    + `<h3>${dpT(zh, '严重程度分级与相关性判定', 'Severity & causality')}</h3>`
+    + dpTbl([dpT(zh, '分级（CTCAE v5.0）', 'Grade (CTCAE v5.0)'), dpT(zh, '定义', 'Definition'), dpT(zh, '相关性', 'Causality')], [
+      ['1 ' + dpT(zh, '级', ''), dpT(zh, '无症状或轻微，仅需临床观察，无需治疗', 'Asymptomatic or mild'), dpT(zh, '肯定有关', 'Related')],
+      ['2 ' + dpT(zh, '级', ''), dpT(zh, '需要轻微、局部或非侵入性治疗，限制日常工具性活动', 'Moderate'), dpT(zh, '很可能有关', 'Probably related')],
+      ['3 ' + dpT(zh, '级', ''), dpT(zh, '严重但非即刻危及生命，需住院或延长住院，导致残疾', 'Severe'), dpT(zh, '可能有关', 'Possibly related')],
+      ['4 ' + dpT(zh, '级', ''), dpT(zh, '危及生命，需紧急干预', 'Life-threatening'), dpT(zh, '可能无关', 'Unlikely related')],
+      ['5 ' + dpT(zh, '级', ''), dpT(zh, '与不良事件相关的死亡', 'Death'), dpT(zh, '无关', 'Not related')]
+    ], [22, 48, 30])
+    + `<h3>${dpT(zh, '报告时限与流程', 'Reporting')}</h3>` + dpUL([
+      dpT(zh, `研究者获知 SAE 后须<b>立即</b>（不迟于 24 小时）报告申办方与机构药物临床试验管理部门，并同步报告伦理委员会；死亡或危及生命的 SAE 须立即口头／电话报告并于 24 小时内提交书面报告。`, 'SAEs must be reported within 24 hours; fatal or life-threatening events require immediate notification plus written report within 24 hours.'),
+      dpT(zh, `SUSAR 由申办方在 ${dpPH(zh, '7 日（死亡／危及生命）或 15 日（其他）')} 内向药品监督管理部门、伦理委员会及所有参与中心通报。`, 'SUSARs are reported within 7/15 days by the sponsor.'),
+      dpT(zh, `随访报告：SAE 发生后 ${dpPH(zh, '每 2 周')}提交随访报告，直至事件转归或稳定，最终提交总结报告。`, 'Follow-up reports are submitted until resolution.')])
+    + `<h3>${dpT(zh, '处理与特殊情形', 'Management')}</h3>` + dpUL([
+      dpT(zh, '立即评估并给予必要的医疗处理，优先保障受试者安全；是否停药按剂量调整规则执行。', 'Provide immediate medical management; discontinuation per dose-modification rules.'),
+      dpT(zh, `妊娠：研究期间发生妊娠须立即停药并报告，随访至妊娠结束，记录新生儿健康状况；${dpPH(zh, '男性受试者配偶妊娠同样报告')}。`, 'Pregnancy: discontinue and report, follow to delivery.'),
+      dpT(zh, `过量／用药错误：记录摄入量、临床表现与处理经过，按 AE/SAE 流程管理。`, 'Overdose or medication error is managed as AE/SAE.'),
+      dpT(zh, '所有 AE 均须在 CRF 中记录事件名称、起止日期、严重程度、相关性、采取措施与转归。', 'All AEs recorded in CRF with onset/end, severity, causality, action and outcome.')]);
+}
+
+function dpDataMgmt(zh) {
+  return `<h3>${dpT(zh, '数据采集与录入', 'Data capture')}</h3>` + dpP(dpT(zh,
+    `研究数据通过${dpPH(zh, '电子数据采集系统（EDC，如 REDCap／太美／Medidata Rave）')}采集，系统须具备${dpPH(zh, '稽查轨迹（audit trail）、逻辑校验、权限分级、电子签名')}功能。原始数据（源文件）包括${dpPH(zh, '病历、检验报告、影像资料、量表原件、给药记录')}，须保存于各中心并可供监查核对。`,
+    `Data are captured in an EDC system with audit trail, edit checks, role-based access and e-signature; source documents are retained at each site.`))
+    + `<h3>${dpT(zh, '数据核查与质疑管理', 'Data review & queries')}</h3>` + dpUL([
+      dpT(zh, `源数据核查（SDV）：关键数据（主要终点、入选/排除标准、SAE、随机号）100% 核查，非关键数据 ${dpPH(zh, '≥20%')} 抽样核查；`, 'SDV: 100% for critical data, ≥20% sampling for others;'),
+      dpT(zh, '系统自动逻辑校验（范围、逻辑一致性、缺失提示）与人工核查相结合，质疑以电子形式发出并由研究者限期回复；', 'Automated edit checks plus manual review; queries resolved within a defined timeframe;'),
+      dpT(zh, `数据库锁定前召开数据审核会，确认所有质疑关闭、方案违背与脱落原因分类完成。`, 'A data review meeting is held before database lock.')])
+    + `<h3>${dpT(zh, '医学编码', 'Medical coding')}</h3>` + dpP(dpT(zh,
+      `不良事件采用 ${dpPH(zh, 'MedDRA 26.0')} 编码（按系统器官分类 SOC 与首选术语 PT 汇总），合并用药采用 ${dpPH(zh, 'WHO Drug 全球字典')} 编码，既往病史按 ${dpPH(zh, 'MedDRA 病史字典')} 编码。编码由经培训人员完成，并在锁库前进行一致性核查。`,
+      `AEs are coded with MedDRA, medications with WHO Drug; coding consistency is verified before lock.`))
+    + `<h3>${dpT(zh, '数据安全、保密与归档', 'Security & archiving')}</h3>` + dpUL([
+      dpT(zh, `受试者以唯一编码标识，CRF 与研究报告中不出现姓名、身份证号、住址等可识别信息；编码对照表由主要研究者单独保管。`, 'Subjects are identified by unique codes; the linking log is held by the PI.'),
+      dpT(zh, `电子数据访问实行最小必要授权，传输加密，定期备份；数据不得用于本研究以外的目的。`, 'Access is role-based, transmission encrypted, data backed up.'),
+      dpT(zh, `研究资料保存至研究终止后至少 ${dpPH(zh, '5 年（按《药物临床试验质量管理规范》要求，机构或申办方要求更长者从其规定）')}，期满后按机构流程销毁并留记录。`, 'Records retained for at least 5 years after study termination.'),
+      dpT(zh, `数据共享（如发表所需原始数据）须经伦理委员会与申办方批准，并以去标识化形式提供。`, 'Any data sharing requires IRB and sponsor approval, de-identified.')]);
+}
+
+function dpStats(zh) {
+  return `<h3>${dpT(zh, '分析集定义', 'Analysis sets')}</h3>` + dpUL([
+    dpT(zh, `<b>全分析集（FAS）</b>：所有经随机化并接受至少一次研究干预的受试者，按随机分组分析；`, '<b>FAS</b>: all randomised subjects receiving at least one dose, analysed as randomised;'),
+    dpT(zh, `<b>符合方案集（PPS）</b>：完成规定疗程、主要终点评估完整、无重大方案违背者；`, '<b>PPS</b>: completers without major deviations;'),
+    dpT(zh, `<b>安全性分析集（SS）</b>：所有接受至少一次研究干预的受试者，按实际接受的治疗分析。`, '<b>SS</b>: all treated subjects, analysed as treated.')])
+    + `<h3>${dpT(zh, '主要终点分析', 'Primary analysis')}</h3>` + dpP(dpT(zh,
+      `主要分析在 FAS 中进行。${dpPH(zh, '若为率：采用 CMH 检验（按中心分层）或 logistic 回归校正基线协变量，报告组间率差及其 95% CI；若为连续变量：采用协方差分析（ANCOVA），以基线值为协变量，报告最小二乘均值差及 95% CI；若为时间—事件：采用 Kaplan-Meier 法与 log-rank 检验，报告风险比及 95% CI。')}检验水准取 ${dpPH(zh, '双侧 α=0.05')}。`,
+      `Primary analysis is performed in the FAS using ${dpPH(zh, 'CMH/logistic regression or ANCOVA or log-rank')} with two-sided α = 0.05.`))
+    + `<h3>${dpT(zh, '缺失值与敏感性分析', 'Missing data & sensitivity')}</h3>` + dpUL([
+      dpT(zh, `主要分析方法在${dpPH(zh, '缺失完全随机（MCAR）或随机缺失（MAR）')}假设下进行，连续变量采用${dpPH(zh, '混合效应模型重复测量（MMRM）或末次观测结转（LOCF）')}，分类变量将缺失视为无效；`, 'Primary approach assumes MAR; MMRM or LOCF used as appropriate;'),
+      dpT(zh, `敏感性分析：${dpPH(zh, '多重插补（MI）、 tipping point 分析、最差情况填补、符合方案集分析')}，以评估结果对缺失假设的稳健性；`, 'Sensitivity: MI, tipping point, worst-case, PPS analysis;'),
+      dpT(zh, '伴发事件（如提前停药、使用挽救治疗）按 ICH E9(R1) 框架预先定义处理策略（治疗策略／假设策略／复合变量策略）。', 'Intercurrent events handled per ICH E9(R1) strategies.')
+    ])
+    + `<h3>${dpT(zh, '其他分析', 'Other analyses')}</h3>` + dpUL([
+      dpT(zh, `亚组分析：按${dpPH(zh, '年龄、性别、基线严重程度、中心')}分层，以森林图呈现，亚组分析为探索性，不作因果推断；`, 'Subgroup analyses are exploratory (forest plots);'),
+      dpT(zh, `多重性控制：${dpPH(zh, '次要终点采用固定序列（Hochberg／Holm）校正，或声明为探索性不作 α 校正')}；`, 'Multiplicity controlled by hierarchical testing or declared exploratory;'),
+      dpT(zh, `期中分析：${dpPH(zh, '如设置，采用 O’Brien-Fleming 界值，由独立统计人员执行并提交 DSMB')}；`, 'Interim analysis per O\'Brien-Fleming if applicable;'),
+      dpT(zh, `安全性分析：按 SOC/PT 汇总 AE 例次与例数，实验室指标采用 shift table 描述；`, 'Safety summarised by SOC/PT and shift tables;'),
+      dpT(zh, `统计软件：${dpPH(zh, 'SAS 9.4 或 R 4.3')}，分析程序与输出须可溯源。`, 'Software: SAS 9.4 or R 4.3.')]);
+}
+
+function dpEthics(zh) {
+  return `<h3>${dpT(zh, '伦理审查', 'IRB review')}</h3>` + dpP(dpT(zh,
+    `研究开始前须经${dpPH(zh, '组长单位伦理委员会')}审查批准，各参加中心须获得本中心伦理委员会批准后方可启动。研究期间方案修订、知情同意书更新、新增中心均须重新报批；${dpPH(zh, '按伦理委员会要求提交年度／定期进展报告')}，研究结束后提交结题报告。`,
+    `The study requires approval from the lead IRB and each site IRB before initiation; amendments require re-approval.`))
+    + `<h3>${dpT(zh, '知情同意', 'Informed consent')}</h3>` + dpUL([
+      dpT(zh, '知情同意过程遵循充分告知、充分理解、自愿同意的原则，给予受试者充足时间考虑，不得施加不当影响；', 'Consent is voluntary, informed and unhurried;'),
+      dpT(zh, '由具备资质的研究者在筛选期任何研究相关操作前完成知情同意并双方签署、注明日期，受试者保留一份签名副本；', 'Obtained before any study procedure; a signed copy is given to the subject;'),
+      dpT(zh, `无阅读能力者由${dpPH(zh, '公正见证人')}全程见证并签名；无民事行为能力者须由法定代理人签署；`, 'Illiterate subjects require an impartial witness;'),
+      dpT(zh, `紧急情况下无法事先取得同意的，须${dpPH(zh, '符合法规规定的例外条件，并在受试者恢复能力后尽快补签')}，同时在 CRF 中记录；`, 'Emergency exception requires subsequent consent per regulations;'),
+      dpT(zh, '研究期间获得新的安全性信息且可能影响受试者继续参与意愿时，须及时更新知情同意书并重新取得同意。', 'Consent is renewed when new safety information emerges.')])
+    + `<h3>${dpT(zh, '风险获益评估', 'Risk-benefit')}</h3>`
+    + dpTbl([dpT(zh, '潜在风险', 'Potential risk'), dpT(zh, '风险最小化措施', 'Mitigation')], [
+      [dpT(zh, `${dpPH(zh, '研究干预相关不良反应（如过敏、出血、肝肾损伤）')}`, dpPH(zh, 'Drug-related AEs')), dpT(zh, '严格入排标准、剂量调整规则、密切监测、急救预案与就近抢救条件', 'Eligibility criteria, dose rules, monitoring, rescue protocols')],
+      [dpT(zh, '采血、影像等研究操作带来的不适与风险', 'Procedure-related discomfort'), dpT(zh, '控制采血量与频次，由熟练人员操作，减少不必要检查', 'Minimise blood volume and procedures')],
+      [dpT(zh, '延误现有治疗的风险', 'Delay of standard care'), dpT(zh, '对照组接受标准治疗，设置退出与挽救治疗规则', 'Control receives standard care; rescue rules defined')],
+      [dpT(zh, '隐私泄露风险', 'Privacy breach'), dpT(zh, '唯一编码、去标识化、权限控制与加密传输', 'Coding, de-identification, access control')]
+    ], [42, 58])
+    + dpP(dpT(zh,
+      `预期获益：受试者可能从${dpIv(zh)}获得${dpPH(zh, '疗效获益（如功能改善、症状缓解）')}，但个体获益不能保证；研究结果将为同类患者积累证据。综合评估认为，本研究的潜在风险相对于预期获益与社会价值是可接受的。`,
+      `Expected benefit: possible ${dpPH(zh, 'clinical benefit')}; individual benefit is not guaranteed. The risk-benefit ratio is considered acceptable.`))
+    + `<h3>${dpT(zh, '隐私保护、补偿与利益冲突', 'Privacy, compensation & COI')}</h3>` + dpUL([
+      dpT(zh, `${dpPH(zh, '受试者补偿与因研究相关损害的治疗费用、保险安排')}须在知情同意书中明确说明，并按伦理委员会要求落实。`, 'Compensation and insurance are stated in the ICF.'),
+      dpT(zh, `弱势群体保护：${dpPH(zh, '如纳入老年人、认知障碍者、经济弱势人群，须说明额外保护措施')}。`, 'Protection of vulnerable populations is specified.'),
+      dpT(zh, `利益冲突：所有研究者须书面声明与研究相关的经济利益与学术利益，由${dpPH(zh, '机构伦理委员会／学术委员会')}审阅并存档。`, 'All investigators submit written COI declarations.'),
+      dpT(zh, `研究结果无论阳性或阴性均予以公开，注册于${dpPH(zh, '中国临床试验注册中心（ChiCTR）／ClinicalTrials.gov')}。`, 'Results are published regardless of direction; the trial is registered.')]);
+}
+
+function dpMgmt(zh) {
+  return `<h3>${dpT(zh, '方案修订', 'Protocol amendments')}</h3>` + dpP(dpT(zh,
+    `涉及研究目的、设计、人群、终点、样本量或风险获益评估的重大修订，须经申办方与主要研究者共同评估、伦理委员会批准后实施，并更新方案版本号与修订记录。仅涉及文字表述或排版的非实质性修订须备案。所有修订须同步更新知情同意书并视情况重新取得同意，必要时对已入组受试者进行补充告知。`,
+    `Substantial amendments require IRB approval before implementation and are documented in a revision log.`))
+    + `<h3>${dpT(zh, '培训与启动', 'Training & initiation')}</h3>` + dpP(dpT(zh,
+      `启动前完成研究中心评估（${dpPH(zh, '资质、设备、人员、目标人群可及性')}）与启动访视，对研究者、研究护士、药师、数据录入人员开展方案、GCP、EDC 操作与终点评估一致性培训，保留培训签到与记录。`,
+      `Site feasibility assessment and initiation visit precede enrolment; training records are retained.`))
+    + `<h3>${dpT(zh, '监查与稽查', 'Monitoring & audit')}</h3>` + dpUL([
+      dpT(zh, `监查频次：首例入组后 ${dpPH(zh, '2 周')}内首次监查，此后每 ${dpPH(zh, '4~8 周')}一次，入组结束与锁库前各一次；`, 'Monitoring frequency per plan;'),
+      dpT(zh, `监查内容：知情同意、入排核查、源数据与 CRF 一致性、研究用药品管理、AE/SAE 记录与报告、方案依从性；`, 'Scope: ICF, eligibility, SDV, IP accountability, AE reporting, compliance;'),
+      dpT(zh, `质量保证：${dpPH(zh, '按机构要求开展独立稽查，稽查比例与频次依风险确定')}；`, 'Independent audit per institutional policy;'),
+      dpT(zh, `发现的问题按 CAPA（纠正与预防措施）流程整改并跟踪关闭。`, 'Findings are managed through CAPA with follow-up.')])
+    + `<h3>${dpT(zh, '质量源于设计（QbD）与关键风险控制', 'Quality by design')}</h3>` + dpP(dpT(zh,
+      `本研究识别的关键质量因素包括：${dpPH(zh, '主要终点测量的可靠性、入排标准执行的一致性、随机化与盲法依从性、SAE 报告的及时性')}。对应风险控制措施已在上文各章节分别设定，并在监查计划中列为重点核查项；研究期间通过关键风险指标（KRI）持续监测，超出阈值时启动针对性整改。`,
+      `Critical-to-quality factors and corresponding risk controls are defined; KRIs are monitored with triggered actions.`))
+    + `<h3>${dpT(zh, '提前终止', 'Early termination')}</h3>` + dpUL([
+      dpT(zh, `${dpPH(zh, 'DSMB 基于安全性或无效性分析建议终止')}；`, 'DSMB recommendation;'),
+      dpT(zh, `入组进度显著低于预期（如连续 ${dpPH(zh, '3 个月')}月均入组＜计划 50%）且不可纠正；`, 'Enrolment far below plan;'),
+      dpT(zh, '发生重大方案违背或系统性质量问题的；', 'Major systemic GCP non-compliance;'),
+      dpT(zh, '监管部门或伦理委员会要求终止的。', 'Regulatory or IRB decision.'),
+      dpT(zh, `终止后须完成${dpPH(zh, '在研受试者的安全性随访、数据清理与结题报告')}，并向伦理委员会与监管部门报告。`, 'Upon termination, safety follow-up and close-out reporting are completed.')]);
+}
+
+function dpTimeline(zh) {
+  return dpP(dpT(zh, `研究预计总周期 ${dpPH(zh, 'X 个月')}，关键里程碑如下（具体日期以立项批准后确定为准）：`,
+    `Total duration is ${dpPH(zh, 'X months')}; milestones below.`))
+    + dpTbl([dpT(zh, '阶段', 'Phase'), dpT(zh, '主要工作', 'Activities'), dpT(zh, '计划时间', 'Timing'), dpT(zh, '责任方', 'Owner')], [
+      [dpT(zh, '方案定稿与立项', 'Protocol finalisation'), dpT(zh, '方案定稿、伦理报批、注册登记、启动会', 'Protocol, IRB submission, registration, SIV'), dpPH(zh, '第 0~2 月', 'M0-2'), dpT(zh, 'PI／申办方', 'PI/Sponsor')],
+      [dpT(zh, '受试者入组', 'Enrolment'), dpT(zh, `按 ${dpCenters(zh)} 完成 ${dpN(zh)} 例入组`, 'Enrol planned N'), dpPH(zh, '第 3~14 月', 'M3-14'), dpT(zh, '各中心研究团队', 'Sites')],
+      [dpT(zh, '治疗与随访', 'Treatment & follow-up'), dpT(zh, '按 SoA 完成治疗与随访，同步数据录入', 'Per SoA with data entry'), dpPH(zh, '第 3~20 月', 'M3-20'), dpT(zh, '研究者／CRC', 'Investigators/CRC')],
+      [dpT(zh, '数据清理与锁库', 'Data cleaning & lock'), dpT(zh, '质疑关闭、医学编码、数据审核会、锁库', 'Query resolution, coding, review, lock'), dpPH(zh, '第 20~22 月', 'M20-22'), dpT(zh, '数据管理／统计', 'DM/Statistics')],
+      [dpT(zh, '统计分析与总结', 'Analysis & report'), dpT(zh, '统计分析、总结报告撰写、结题与发表', 'Analysis, final report, publication'), dpPH(zh, '第 22~26 月', 'M22-26'), dpT(zh, '统计师／PI', 'Statistician/PI')]
+    ], [18, 36, 22, 24])
+    + dpP(dpT(zh,
+      `关键依赖与衔接：伦理批准与临床研究注册是首例入组的前提，注册须在首例入组前完成并可公开检索；各中心启动访视与培训完成后方可开始筛选。入组通常在启动后第 2~3 个月进入平台期，若此时实际月均入组低于计划的 70%，需在第 4 个月前完成中心增补决策，以免影响总周期。`,
+      `Ethics approval and registration precede first enrolment; a decision on adding sites is taken early if enrolment lags.`))
+    + dpP(dpT(zh,
+      `过程控制节点：研究期间按 ${dpPH(zh, '每 3 个月')} 召开项目进展会，核对入组、脱落、方案违背与安全事件；${dpPH(zh, '按 DSMB 章程在入组 30%/50% 与锁库前')}召开数据安全监查会议；末例入组后仍需完成最长随访周期（${dpPH(zh, '如 90 天')}）方可进入数据清理，锁库前须完成全部质疑关闭与方案违背分类。`,
+      `Progress meetings, DSMB reviews and the final follow-up period are scheduled before database lock.`))
+    + dpP(dpT(zh,
+      `延期预案：因入组不足、中心退出或外部因素（如公共卫生事件）导致延期的，须提交书面延期申请，说明原因、影响范围与补救措施；延期超过 ${dpPH(zh, '6 个月')} 的须同步报伦理委员会备案。`,
+      `Delays require a written justification and IRB notification where applicable.`));
+}
+
+function dpBudget(zh) {
+  return dpP(dpT(zh, `研究经费预算按科目编制（详见配套《经费预算科目表》），主要构成如下：`, 'The budget is itemised in the accompanying Budget Table.'))
+    + dpTbl([dpT(zh, '科目', 'Category'), dpT(zh, '计费口径', 'Basis'), dpT(zh, '说明', 'Notes')], [
+      [dpT(zh, '检查检验费', 'Assessments'), dpT(zh, '按例数×人均检查项目', 'Per subject'), dpT(zh, '按方案 SoA 规定的检查项目计列', 'Per SoA')],
+      [dpT(zh, '研究用药品／器械', 'IP'), dpT(zh, '按疗程用量', 'Per course'), dpPH(zh, '由申办方免费提供者不计入', 'Free of charge if sponsored')],
+      [dpT(zh, '受试者补偿', 'Compensation'), dpT(zh, '按例数×访视次数', 'Per visit'), dpT(zh, '含交通、误工补偿，标准须经伦理审查', 'IRB-approved')],
+      [dpT(zh, '数据管理与统计', 'DM & statistics'), dpT(zh, '按项目整体或例数', 'Lump sum / per subject'), dpT(zh, '含 EDC 使用、编码、统计分析', 'EDC, coding, analysis')],
+      [dpT(zh, '伦理审查与机构管理费', 'IRB & admin'), dpT(zh, '按中心计', 'Per site'), dpT(zh, '依各机构收费标准', 'Per institutional fee schedule')],
+      [dpT(zh, '人力与协调', 'Personnel'), dpT(zh, '按 FTE×月', 'FTE-months'), dpT(zh, 'CRC、研究护士、监查', 'CRC, nurse, CRA')],
+      [dpT(zh, '其他', 'Others'), dpT(zh, '按实际', 'Actual'), dpT(zh, '差旅、会议、发表、不可预见费（建议 5%~10%）', 'Travel, publication, contingency')]
+    ], [24, 26, 50])
+    + dpP(dpT(zh, `资金来源为${dpPH(zh, '申办方自筹／科研课题经费／企业资助')}，经费使用按${dpPH(zh, '机构科研经费管理办法')}执行，专款专用并接受审计。`,
+      `Funding source: ${dpPH(zh, 'sponsor/grant')}; funds are managed per institutional policy.`))
+    + `<h3>${dpT(zh, '经费管理与支付节点', 'Budget management')}</h3>` + dpP(dpT(zh,
+      `经费按里程碑分期支付：启动时支付 ${dpPH(zh, '30%')}，入组过半支付 ${dpPH(zh, '30%')}，数据库锁库后支付 ${dpPH(zh, '30%')}，总结报告通过后支付 ${dpPH(zh, '10%')}（比例可按机构与合作方协议调整）。各中心按实际入组例数与完成的访视结算，须提交费用明细与凭证。`,
+      `Funds are released against milestones and settled per enrolled subject and completed visits.`))
+    + dpP(dpT(zh,
+      `受试者补偿按访视实到情况发放，须保留签收记录，不得以完成研究为条件强制发放；超支或科目间调整须提交书面申请，经经费管理部门审批；研究提前终止时，按实际完成工作量结算，剩余经费按协议退回。`,
+      `Compensation is paid per attended visit with signed records; overruns require written approval.`));
+}
+
+function dpFeasibility(zh) {
+  return `<h3>${dpT(zh, '病例来源与入组可行性', 'Feasibility of enrolment')}</h3>` + dpP(dpT(zh,
+    `按本研究的中心设置（${dpCenters(zh)}）估算，各中心${dpDz(zh)}年诊疗量约 ${dpPH(zh, 'X 例')}，符合入排标准者约占 ${dpPH(zh, '20%~30%')}，预计月均入组 ${dpPH(zh, 'X 例/中心')}；按入组期 ${dpPH(zh, '12 个月')}计算，预计可完成 ${dpN(zh)} 例，满足研究需求。若实际入组速率低于计划的 70%，将启动增补中心或延长入组期的预案。`,
+    `Based on site volumes and eligibility proportion, monthly enrolment is estimated at ${dpPH(zh, 'X per site')}, sufficient to reach ${dpN(zh)} within the enrolment window; contingency includes adding sites.`))
+    + `<h3>${dpT(zh, '团队与研究基础', 'Team & capability')}</h3>` + dpP(dpT(zh,
+      `主要研究者${dpPH(zh, '姓名、职称、单位')}长期从事${dpDz(zh)}诊疗与研究，主持过 ${dpPH(zh, 'X 项')} 相关临床研究；研究团队包含${dpPH(zh, '临床医师、研究护士、CRC、药师、数据管理与统计人员')}，具备完成本研究的能力与时间投入。`,
+      `The PI and team have relevant expertise and protected time for the study.`))
+    + `<h3>${dpT(zh, '风险与应对', 'Risks & mitigation')}</h3>`
+    + dpTbl([dpT(zh, '潜在风险', 'Risk'), dpT(zh, '影响', 'Impact'), dpT(zh, '应对措施', 'Mitigation')], [
+      [dpT(zh, '入组速度不及预期', 'Slow enrolment'), dpT(zh, '延长研究周期', 'Timeline delay'), dpT(zh, '增补中心、优化筛选流程、扩大宣传与门诊筛查', 'Add sites, streamline screening')],
+      [dpT(zh, '脱落率高于预期', 'Higher dropout'), dpT(zh, '样本量不足、效能下降', 'Power loss'), dpT(zh, '加强随访管理、提前提醒、交通补偿、允许电话/视频随访', 'Enhanced follow-up, reminders')],
+      [dpT(zh, '终点评估一致性不足', 'Assessment variability'), dpT(zh, '测量偏倚', 'Measurement bias'), dpT(zh, '统一培训与一致性测试、中心化判读、EAC 裁定', 'Training, central reading, EAC')],
+      [dpT(zh, '研究用药品供应中断', 'IP supply'), dpT(zh, '给药延迟', 'Delay'), dpT(zh, '安全库存、提前 2 个月预警补货', 'Safety stock, early reorder')]
+    ], [26, 24, 50]);
+}
+
+function dpRefs(zh) {
+  return dpP(dpT(zh, '参考文献按 GB/T 7714 格式著录，建议纳入：', 'References follow GB/T 7714; include:'))
+    + dpUL([dpT(zh, `[1] ${dpPH(zh, '疾病诊疗指南／专家共识（注明版本与发布机构）')}`, '[1] ' + dpPH(zh, 'guideline')),
+      dpT(zh, `[2] ${dpPH(zh, '该病流行病学或疾病负担研究（近 5 年）')}`, '[2] ' + dpPH(zh, 'epidemiology')),
+      dpT(zh, `[3] ${dpPH(zh, '现有标准治疗的关键 RCT 或 meta 分析')}`, '[3] ' + dpPH(zh, 'standard-of-care evidence')),
+      dpT(zh, `[4] ${dpPH(zh, '研究干预的机制研究与早期临床研究')}`, '[4] ' + dpPH(zh, 'mechanistic/early-phase data')),
+      dpT(zh, `[5] ${dpPH(zh, '同类研究的方法学参考（用于样本量与终点设定）')}`, '[5] ' + dpPH(zh, 'methodological reference')),
+      dpT(zh, `[6] ${dpPH(zh, '相关报告规范（SPIRIT 2013、CONSORT 2010、STROBE、STARD 2015 等）')}`, '[6] ' + dpPH(zh, 'reporting guideline'))])
+    + dpP(dpT(zh,
+      `检索策略建议：以「${dpDz(zh)}」AND（「${dpPH(zh, '干预名称')}」OR「同类药物／技术」）为检索式，检索 PubMed、Embase、Cochrane Library 及中国知网、万方、维普，时间限定近 5 年，并追溯关键文献的参考文献列表（滚雪球法）；同时检索 ${dpPH(zh, 'ChiCTR／ClinicalTrials.gov')} 以确认是否存在同类在研研究，避免重复。`,
+      `Search strategy: disease AND intervention across PubMed, Embase, Cochrane and Chinese databases (last 5 years), with snowballing and trial-registry checks.`))
+    + dpP(dpT(zh,
+      `著录格式示例（GB/T 7714）：期刊 [J] 作者. 题名[J]. 期刊名, 年, 卷(期): 起止页码.；专著 [M] 作者. 书名[M]. 版次. 出版地: 出版者, 年: 页码.；指南／标准 [S] 发布机构. 标准名称[S]. 发布地: 发布机构, 年.`,
+      `Citation format (GB/T 7714) examples for journal articles, books and guidelines are provided.`));
+}
+
+function dpAppendix(zh) {
+  return dpP(dpT(zh, '本方案随附以下文件（详见本文件后续配套文档部分）：', 'The following documents accompany this protocol:'))
+    + dpUL([dpT(zh, '附件 1：知情同意书（ICF）', 'Appendix 1: ICF'),
+      dpT(zh, '附件 2：病例报告表（CRF）设计模板', 'Appendix 2: CRF'),
+      dpT(zh, '附件 3：统计分析计划（SAP）', 'Appendix 3: SAP'),
+      dpT(zh, '附件 4：伦理审查申请材料', 'Appendix 4: IRB submission'),
+      dpT(zh, `附件 5：${dpPH(zh, '研究者手册／产品说明书')}`, 'Appendix 5: IB/package insert'),
+      dpT(zh, `附件 6：${dpPH(zh, '量表原件与授权证明、实验室参考范围')}`, 'Appendix 6: scales and lab ranges'),
+      dpT(zh, '附件 7：合规核查清单（SPIRIT／ICH E6(R3)）', 'Appendix 7: compliance checklist')]);
+}
+
+/* ---------------- RWE 专属章节 ---------------- */
+function dpRweFramework(zh) {
+  return `<h3>${dpT(zh, '第一步：数据适用性评估（Fit for Purpose）', 'Step 1: Data fitness')}</h3>` + dpP(dpT(zh,
+    `评价真实世界数据（RWD）是否适用于回答本研究问题，需从${dpPH(zh, '数据来源的代表性、关键变量的可及性与准确性、随访时长、样本量')}等维度评估，形成书面评估报告（见配套《RWE 适用性评估》）。未通过适用性评估的数据源不得进入后续分析。`,
+    `Fitness of the RWD source is assessed for representativeness, variable availability/accuracy, follow-up length and sample size; a written assessment is required.`))
+    + `<h3>${dpT(zh, '第二步：研究设计科学性评估', 'Step 2: Design validity')}</h3>` + dpUL([
+      dpT(zh, `明确目标试验（target trial）的${dpPH(zh, '纳入人群、干预策略、分配程序、随访起点、结局、因果对比')}，并使观察性分析尽可能模拟该试验；`, 'Define the target trial and emulate it;'),
+      dpT(zh, `新用户（new-user）设计与积极对照（active comparator）设计可减少${dpPH(zh, '适应证混杂与健康使用者偏倚')}；`, 'New-user and active-comparator designs reduce confounding;'),
+      dpT(zh, `设置足够的洗脱期与延迟进入（lag period），避免${dpPH(zh, '结局事件已发生或效应尚未出现')}造成的错分；`, 'Washout and lag periods avoid misclassification;'),
+      dpT(zh, `预注册分析方案（SAP），明确主要对比、协变量、敏感性分析，避免结果导向的分析选择。`, 'Pre-specify the SAP to prevent result-driven choices.')])
+    + `<h3>${dpT(zh, '第三步：研究执行合规性评估', 'Step 3: Execution compliance')}</h3>` + dpP(dpT(zh,
+      `研究实施须符合${dpPH(zh, 'GCP 中适用于真实世界研究的条款、数据安全与隐私保护法规、机构数据使用协议')}；数据提取脚本、清洗规则、分析代码须版本化管理并可复现；关键分析由第二人独立复核。`,
+      `Execution must comply with applicable GCP provisions, data protection law and data use agreements; code is version-controlled and reproducible.`));
+}
+
+function dpRweData(zh) {
+  return `<h3>${dpT(zh, '数据来源与链接', 'Data sources & linkage')}</h3>` + dpUL([
+    dpT(zh, `主要数据源：${dpPH(zh, '医院信息系统（HIS/EMR）、疾病登记数据库、医保理赔数据、区域健康档案')}；`, 'Primary source: ' + dpPH(zh, 'EHR/registry/claims') + ';'),
+    dpT(zh, `数据链接：${dpPH(zh, '以匿名化唯一标识按确定性或概率匹配链接多源数据，报告匹配率与错配率')}；`, 'Linkage method and match rate are reported;'),
+    dpT(zh, `索引日期（index date）定义为${dpPH(zh, '首次用药日／首次诊断日')}，随访起点与终点规则明确；`, 'Index date and follow-up windows are defined;'),
+    dpT(zh, `观察窗：${dpPH(zh, '基线期（索引日前 12 个月）、随访期（索引日至事件/失访/研究截止）')}。`, 'Observation windows are pre-specified.')])
+    + `<h3>${dpT(zh, '变量定义与测量', 'Variable definitions')}</h3>` + dpTbl(
+      [dpT(zh, '变量类别', 'Domain'), dpT(zh, '操作性定义', 'Operational definition')], [
+        [dpT(zh, '暴露／干预', 'Exposure'), dpT(zh, `${dpIv(zh)}：${dpPH(zh, '处方记录／医嘱／操作编码，含剂量、频次、起止时间')}`, dpPH(zh, 'prescription/order codes with dose and duration'))],
+        [dpT(zh, '结局', 'Outcome'), dpT(zh, `${dpEp(zh)}：${dpPH(zh, '诊断编码＋检验/影像/用药佐证，必要时人工病历复核')}`, dpPH(zh, 'codes plus supporting evidence'))],
+        [dpT(zh, '协变量', 'Covariates'), dpT(zh, `${dpPH(zh, '人口学、合并症（按 Charlson/Elixhauser 指数）、基线用药、实验室指标、既往医疗资源使用')}`, dpPH(zh, 'demographics, comorbidity indices, baseline meds'))],
+        [dpT(zh, '随访与删失', 'Follow-up'), dpT(zh, `${dpPH(zh, '失访、转院、保险变更、研究截止')}视为删失`, dpPH(zh, 'censoring rules'))]
+      ], [24, 76]);
+}
+
+function dpRweBias(zh) {
+  return `<h3>${dpT(zh, '混杂控制', 'Confounding control')}</h3>` + dpUL([
+    dpT(zh, `倾向性评分匹配（PSM）：以${dpPH(zh, '年龄、性别、合并症、基线严重程度、合并用药')}构建倾向评分，按 ${dpPH(zh, '1:1 卡钳 0.2×SD(logit PS)')} 匹配，报告匹配前后标准化差异（|SMD|＜0.1 为均衡）；`, 'PSM with caliper 0.2 SD(logit PS); |SMD| < 0.1 indicates balance;'),
+    dpT(zh, `逆概率加权（IPTW）与双重稳健估计（AIPW）作为主要或敏感性分析；`, 'IPTW and doubly robust estimators as sensitivity analyses;'),
+    dpT(zh, `工具变量（IV）法：${dpPH(zh, '如地域处方偏好、医师处方习惯')}，须论证相关性与排他性；`, 'Instrumental variable approach with assumptions justified;'),
+    dpT(zh, `阴性对照结局与阴性对照暴露用于检出残余混杂；`, 'Negative control outcomes/exposures detect residual confounding;')])
+    + `<h3>${dpT(zh, '其他偏倚', 'Other biases')}</h3>` + dpTbl(
+      [dpT(zh, '偏倚类型', 'Bias'), dpT(zh, '识别与控制', 'Control')], [
+        [dpT(zh, '适应证混杂', 'Confounding by indication'), dpT(zh, '积极对照、新用户设计、PSM/IPTW、E-value 敏感性分析', 'Active comparator, new-user design, E-value')],
+        [dpT(zh, '永恒时间偏倚', 'Immortal time bias'), dpT(zh, '以首次暴露为索引日期，采用时依性暴露模型', 'Time-dependent exposure modelling')],
+        [dpT(zh, '信息偏倚（编码误分类）', 'Misclassification'), dpT(zh, `${dpPH(zh, '抽样病历复核计算阳性预测值，进行定量偏倚分析')}`, 'Chart review for PPV; quantitative bias analysis')],
+        [dpT(zh, '选择偏倚（入组/失访）', 'Selection bias'), dpT(zh, `${dpPH(zh, '描述入组流程图、比较纳入与排除人群特征、失访敏感性分析')}`, 'Flow diagram; comparison with excluded; sensitivity analysis')],
+        [dpT(zh, '检出偏倚', 'Detection bias'), dpT(zh, `${dpPH(zh, '统一随访窗口、要求结局有客观佐证、盲态结局判定')}`, 'Standardised windows; objective outcome evidence')]
+      ], [26, 74]);
+}
+
+/* ---------------- 上市后 PMR/PMC 专属 ---------------- */
+function dpPmrRegulatory(zh) {
+  return `<h3>${dpT(zh, '法规依据', 'Regulatory basis')}</h3>` + dpP(dpT(zh,
+    `本研究依据${dpPH(zh, 'FDA 505(o)(3)（FDAAA）／国家药监局上市后研究要求')}开展。当药品获批后出现${dpPH(zh, '新的安全性信号')}，或监管机构认定需进一步评估${dpPH(zh, '严重风险、特殊人群安全性、剂量—效应关系')}时，可要求开展上市后研究（PMR）或将已承诺的研究作为上市后承诺（PMC）执行。`,
+    `The study is conducted under ${dpPH(zh, 'FDA 505(o)(3)/NMPA post-marketing requirements')} to address ${dpPH(zh, 'a new safety signal or unresolved risk')}.`))
+    + `<h3>${dpT(zh, 'PMR 与 PMC 的判定', 'PMR vs PMC')}</h3>` + dpTbl(
+      [dpT(zh, '类型', 'Type'), dpT(zh, '触发情形', 'Trigger'), dpT(zh, '进度报告要求', 'Reporting')], [
+        [dpT(zh, 'PMR（上市后要求）', 'PMR'), dpT(zh, '法规强制要求，针对严重风险或疗效不确定', 'Mandatory for serious risk'), dpT(zh, '按里程碑提交进度与最终报告', 'Milestone-based reports')],
+        [dpT(zh, 'PMC（上市后承诺）', 'PMC'), dpT(zh, '申办方自愿承诺（如补充有效性、儿科研究）', 'Sponsor commitment'), dpT(zh, '按承诺时间表提交，可申请延期', 'Per committed timeline')]
+      ], [26, 44, 30])
+    + `<h3>${dpT(zh, '研究定位与决策价值', 'Decision value')}</h3>` + dpP(dpT(zh,
+      `研究结果将用于${dpPH(zh, '说明书更新（新增警示、禁忌或剂量调整）、风险管理计划（RMP）修订、是否需要进一步研究或撤市的监管决策')}。因此在设计上须保证${dpPH(zh, '足够的样本量与暴露时长、目标人群的代表性、结局判定的客观性')}，以满足监管对因果推断的要求。`,
+      `Results inform labelling changes, RMP updates and regulatory decisions, requiring adequate size, exposure duration and objective outcome ascertainment.`));
+}
+
+function dpPmrMilestones(zh) {
+  return dpTbl([dpT(zh, '里程碑', 'Milestone'), dpT(zh, '交付物', 'Deliverable'), dpT(zh, '时间', 'Timing')], [
+    [dpT(zh, '方案提交', 'Protocol submission'), dpT(zh, '研究方案与 SAP 定稿', 'Protocol & SAP'), dpPH(zh, '研究启动前', 'Before start')],
+    [dpT(zh, '研究启动', 'Study initiation'), dpT(zh, '伦理批准、中心启动、首例入组', 'IRB approval, SIV, FPI'), dpPH(zh, '第 0 月', 'M0')],
+    [dpT(zh, '年度进展报告', 'Annual report'), dpT(zh, '入组进度、安全性汇总', 'Enrolment and safety summary'), dpT(zh, '每年 1 次', 'Annually')],
+    [dpT(zh, '末例完成', 'Last patient out'), dpT(zh, '完成随访与数据清理', 'Follow-up completed, data cleaned'), dpPH(zh, '第 X 月', 'M X')],
+    [dpT(zh, '最终报告', 'Final report'), dpT(zh, '研究报告与监管提交资料', 'Study report for submission'), dpPH(zh, '研究结束后 12 个月内', 'Within 12 months')]
+  ], [22, 40, 38]);
+}
+
+function dpPmrReport(zh) {
+  return `<h3>${dpT(zh, '安全性信号监测与评估', 'Signal detection')}</h3>` + dpUL([
+    dpT(zh, `主动监测：${dpPH(zh, '基于登记研究／电子病历／理赔数据的队列监测，计算发生率与暴露人年')}；`, 'Active monitoring with incidence rates per person-year;'),
+    dpT(zh, `信号评估：采用${dpPH(zh, '比例失衡分析（PRR/ROR）、时序分析、病例系列复核')}进行信号初筛，再由专家组评估因果可能性；`, 'Disproportionality and case-series review followed by expert causality assessment;'),
+    dpT(zh, `风险沟通：达到预设阈值时启动${dpPH(zh, '说明书更新、致医务人员函（DHPC）、召回或撤市评估')}。`, 'Risk communication triggers per thresholds.')])
+    + `<h3>${dpT(zh, '进展报告要求', 'Progress reporting')}</h3>` + dpP(dpT(zh,
+      `按监管要求提交${dpPH(zh, '年度进展报告（含入组、暴露、AE 汇总）与最终研究报告')}；研究延期须提交延期申请并说明原因与补救措施；研究终止须报告终止原因、已入组受试者的后续安排与已有数据分析结果。`,
+      `Annual progress and final reports are submitted per requirements; delays and terminations are reported with justification.`));
+}
+
+/* ---------------- 观察性研究专属 ---------------- */
+function dpObsDesign(zh) {
+  return `<h3>${dpT(zh, '设计类型与报告规范', 'Design & reporting standard')}</h3>` + dpP(dpT(zh,
+    `本研究为${dpDg(zh)}，按 ${dpPH(zh, 'STROBE')} 规范报告。研究现场为${dpPH(zh, '单中心／多中心，说明机构类型与覆盖人群')}，研究对象来源为${dpPH(zh, '门诊／住院／社区人群／登记数据库')}，纳入时间范围为 ${dpPH(zh, '起始日期至结束日期')}。`,
+    `This is a ${dpDg(zh)} study reported per ${dpPH(zh, 'STROBE')}; setting and recruitment period are specified.`))
+    + `<h3>${dpT(zh, '样本量估算', 'Sample size')}</h3>` + dpP(dpT(zh,
+      `样本量按${dpPH(zh, '横断面研究的率精度公式 n=Z²p(1-p)/d²／队列研究的相对危险度检验公式／多因素回归的经验法则（EPV≥10）')}估算：设定${dpPH(zh, '预期率 p、允许误差 d、α 与效能')}，考虑${dpPH(zh, '失访率')}，计划纳入 ${dpN(zh)} 例。`,
+      `Sample size is estimated by ${dpPH(zh, 'precision or power formula')} with allowance for loss to follow-up; N = ${dpN(zh)}.`))
+    + `<h3>${dpT(zh, '研究对象与随访', 'Population & follow-up')}</h3>` + dpUL([
+      dpT(zh, `纳入标准：${dpPH(zh, '明确的目标人群定义、暴露或疾病状态、时间范围')}；`, 'Inclusion: ' + dpPH(zh, 'definition') + ';'),
+      dpT(zh, `排除标准：${dpPH(zh, '现患/既往已发生结局者（用于新发结局研究）、信息严重缺失者')}；`, 'Exclusion: prevalent cases, missing key data;'),
+      dpT(zh, `随访：${dpPH(zh, '随访间隔、随访方式（门诊/电话/数据库链接）、随访终点')}，失访定义为${dpPH(zh, '连续 2 次随访未获得结局信息')}。`, 'Follow-up intervals and loss-to-follow-up definition.')]);
+}
+
+function dpObsVars(zh) {
+  return `<h3>${dpT(zh, '暴露／研究因素定义', 'Exposure definition')}</h3>` + dpP(dpT(zh,
+    `${dpPH(zh, '暴露变量名称')}定义为${dpPH(zh, '暴露水平（有/无、分级、累积剂量）、测量方法（问卷/病历/检测）与判定标准')}；暴露测量须${dpPH(zh, '由不知晓结局的评估者完成，或采用客观记录')}，以减少信息偏倚。`,
+    `Exposure is defined as ${dpPH(zh, 'level and measurement')}, assessed blind to outcome where possible.`))
+    + `<h3>${dpT(zh, '结局定义与判定', 'Outcome definition')}</h3>` + dpP(dpT(zh,
+      `主要结局为「${dpEp(zh)}」，依据${dpPH(zh, '诊断标准／检验／影像／登记编码＋佐证')}判定，由${dpPH(zh, '独立终点判定委员会盲态裁定')}；次要结局包括${dpPH(zh, '并发症、功能状态、死亡等')}。结局判定标准须在数据收集前确定并保持稳定。`,
+      `Primary outcome "${dpEp(zh)}" is adjudicated blind by an independent committee using pre-specified criteria.`))
+    + `<h3>${dpT(zh, '混杂因素与协变量', 'Confounders & covariates')}</h3>` + dpTbl(
+      [dpT(zh, '类别', 'Domain'), dpT(zh, '变量', 'Variables'), dpT(zh, '测量方式', 'Measurement')], [
+        [dpT(zh, '人口学', 'Demographics'), dpT(zh, '年龄、性别、民族、教育、收入', 'Age, sex, ethnicity, SES'), dpT(zh, '问卷／病历', 'Questionnaire/records')],
+        [dpT(zh, '临床特征', 'Clinical'), dpT(zh, '合并症、疾病严重程度、基线检验指标', 'Comorbidities, severity, labs'), dpT(zh, '病历／检验', 'Records/labs')],
+        [dpT(zh, '治疗相关', 'Treatment'), dpT(zh, '合并用药、既往治疗史', 'Concomitant meds'), dpT(zh, '处方记录', 'Prescriptions')],
+        [dpT(zh, '行为生活方式', 'Lifestyle'), dpT(zh, '吸烟、饮酒、BMI、体力活动', 'Smoking, alcohol, BMI'), dpT(zh, '问卷', 'Questionnaire')]
+      ], [22, 44, 34]);
+}
+
+function dpObsStats(zh) {
+  return `<h3>${dpT(zh, '描述性分析', 'Descriptive analysis')}</h3>` + dpP(dpT(zh,
+    `连续变量按分布以均数±标准差或中位数（四分位数）描述，分类变量以频数与百分比描述；比较组间基线特征采用 t 检验、秩和检验或卡方检验，并报告标准化差异以评估混杂均衡性。`,
+    `Continuous variables are summarised as mean±SD or median (IQR); categorical as n (%); standardised differences assess balance.`))
+    + `<h3>${dpT(zh, '主要分析', 'Main analysis')}</h3>` + dpUL([
+      dpT(zh, `采用${dpPH(zh, '多因素 logistic 回归／Cox 比例风险模型／线性回归')}估计暴露与结局的关联，报告${dpPH(zh, 'OR／HR／β')}及 95% CI，并校正上文列出的混杂因素；`, 'Multivariable models estimate associations with 95% CI;'),
+      dpT(zh, `协变量选择依据${dpPH(zh, '先验知识（DAG）而非单因素筛选 P 值')}，以避免过度拟合与碰撞偏倚；`, 'Covariates selected by DAG, not univariate screening;'),
+      dpT(zh, `剂量—反应关系：按暴露水平分组分析，并进行趋势检验；`, 'Dose-response with trend test;'),
+      dpT(zh, `分层与交互作用：按${dpPH(zh, '年龄、性别、病情严重程度')}分层，检验交互项。`, 'Stratified and interaction analyses.')])
+    + `<h3>${dpT(zh, '偏倚与敏感性分析', 'Bias & sensitivity')}</h3>` + dpUL([
+      dpT(zh, `选择偏倚：比较纳入与未纳入人群基线特征；对失访者进行敏感性分析；`, 'Compare included vs excluded; sensitivity for loss to follow-up;'),
+      dpT(zh, `信息偏倚：${dpPH(zh, '抽样复核暴露与结局的判定一致性（Kappa），必要时进行定量偏倚分析')}；`, 'Validation substudy with kappa;'),
+      dpT(zh, `混杂：${dpPH(zh, '倾向性评分、E-value 或负对照')}评估未测量混杂的影响；`, 'E-value/negative controls for unmeasured confounding;'),
+      dpT(zh, `缺失值：${dpPH(zh, '多重插补（链式方程，m=20）')}，并比较完整病例分析结果。`, 'Multiple imputation with complete-case comparison.')]);
+}
+
+/* ---------------- 诊断试验专属 ---------------- */
+function dpDiagDesign(zh) {
+  return `<h3>${dpT(zh, '设计与报告规范（STARD 2015）', 'Design & STARD 2015')}</h3>` + dpP(dpT(zh,
+    `本研究为${dpDg(zh)}，按 STARD 2015 规范报告。待评价试验为「${dpIv(zh)}」，参比标准（金标准）为「${dpCt(zh)}」。研究对象为${dpPH(zh, '临床疑似目标疾病、连续或随机抽样纳入')}的患者，须避免${dpPH(zh, '病例对照式纳入造成的谱偏倚')}。`,
+    `Index test: ${dpIv(zh)}; reference standard: ${dpCt(zh)}; consecutive or random sampling is used to avoid spectrum bias.`))
+    + `<h3>${dpT(zh, '盲法与实施', 'Blinding & conduct')}</h3>` + dpUL([
+      dpT(zh, `待评价试验与参比标准的判读${dpPH(zh, '相互独立、互不知晓对方结果')}，判读者${dpPH(zh, '为不知晓临床最终诊断的独立医师')}；`, 'Independent blinded interpretation;'),
+      dpT(zh, `所有受试者均接受同一参比标准，未接受参比标准者须说明原因并单独分析；`, 'All participants receive the same reference standard;'),
+      dpT(zh, `待评价试验的${dpPH(zh, '操作流程、设备型号、试剂批号、判读阈值')}须预先规定并全程一致；`, 'Pre-specified procedures, devices, thresholds;'),
+      dpT(zh, `记录${dpPH(zh, '无法判读／不确定结果')}的比例及其处理方式。`, 'Indeterminate results are reported.')])
+    + `<h3>${dpT(zh, '样本量', 'Sample size')}</h3>` + dpP(dpT(zh,
+      `样本量按${dpPH(zh, '预期灵敏度/特异度及其置信区间宽度')}估算：设定预期灵敏度 ${dpPH(zh, '0.90')}、允许的 95% CI 半宽 ${dpPH(zh, '0.05')}、预期患病率 ${dpPH(zh, '30%')}，计算所需目标疾病患者数与总样本量，考虑${dpPH(zh, '10%')}脱落，最终计划纳入 ${dpN(zh)} 例。`,
+      `Sample size is based on expected sensitivity/specificity and CI width; N = ${dpN(zh)} including dropout allowance.`));
+}
+
+function dpDiagAccuracy(zh) {
+  return `<h3>${dpT(zh, '主要准确度指标', 'Accuracy measures')}</h3>` + dpTbl(
+    [dpT(zh, '指标', 'Measure'), dpT(zh, '定义', 'Definition'), dpT(zh, '报告要求', 'Reporting')], [
+      [dpT(zh, '灵敏度', 'Sensitivity'), dpT(zh, '真阳性/(真阳性+假阴性)', 'TP/(TP+FN)'), dpT(zh, '点估计＋95% CI', 'Estimate with 95% CI')],
+      [dpT(zh, '特异度', 'Specificity'), dpT(zh, '真阴性/(真阴性+假阳性)', 'TN/(TN+FP)'), dpT(zh, '点估计＋95% CI', 'Estimate with 95% CI')],
+      [dpT(zh, '阳性预测值/阴性预测值', 'PPV/NPV'), dpT(zh, '依赖患病率，须注明目标人群患病率', 'Prevalence-dependent'), dpT(zh, '同时报告患病率', 'Report prevalence')],
+      [dpT(zh, '似然比', 'Likelihood ratio'), dpT(zh, 'LR+ = 灵敏度/(1-特异度)', 'LR+ = Se/(1-Sp)'), dpT(zh, '用于验后概率推算', 'For post-test probability')],
+      [dpT(zh, 'ROC 曲线下面积', 'AUC'), dpT(zh, '综合判别能力，0.5 为随机', 'Discrimination'), dpT(zh, '与 0.5 比较的 P 值', 'Test vs 0.5')]
+    ], [24, 48, 28])
+    + `<h3>${dpT(zh, '分析与比较', 'Analysis')}</h3>` + dpUL([
+      dpT(zh, `报告 2×2 列联表，计算上述指标；对${dpPH(zh, '阈值依赖的指标绘制 ROC 曲线')}；`, 'Report 2×2 table and ROC curve;'),
+      dpT(zh, `若与现有方法比较，采用${dpPH(zh, '配对 McNemar 检验或 DeLong 检验比较 AUC')}；`, 'Paired McNemar or DeLong test for comparison;'),
+      dpT(zh, `按${dpPH(zh, '年龄、性别、疾病严重程度、中心')}进行亚组分析，评估准确度的稳定性；`, 'Subgroup analyses for stability;'),
+      dpT(zh, `报告${dpPH(zh, '不确定结果、技术失败、不良事件')}的发生情况。`, 'Report indeterminate results and adverse events.')]);
+}
+
+/* ==========================================================================
+   方案正文装配：按研究类型/模板版本拼装深度章节
+   ========================================================================== */
+const DP_CN_NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十'];
+
+function dpEstimandTable(zh) {
+  return dpP(dpT(zh, '本研究按 ICH E9(R1) 框架预先定义主要估计目标（Estimand）的五要素：', 'The primary estimand is defined per ICH E9(R1):'))
+    + dpTbl([dpT(zh, '要素', 'Attribute'), dpT(zh, '本研究定义', 'Definition')], [
+      [dpT(zh, '目标人群', 'Population'), dpT(zh, `${dpDz(zh)}患者，符合入选/排除标准者`, 'Patients meeting eligibility criteria')],
+      [dpT(zh, '治疗条件', 'Treatment condition'), dpT(zh, `${dpIv(zh)} vs ${dpCt(zh)}`, 'as above')],
+      [dpT(zh, '终点变量', 'Variable'), dpT(zh, dpEp(zh), dpEp(zh))],
+      [dpT(zh, '伴发事件处理', 'Intercurrent events'), dpT(zh, `${dpPH(zh, '提前停药、使用挽救治疗、死亡的处理策略（治疗策略/假设策略/复合变量策略/主分层策略）')}`, dpPH(zh, 'strategy per ICE'))],
+      [dpT(zh, '群体层面汇总', 'Population-level summary'), dpT(zh, `${dpPH(zh, '组间率差／均值差／风险比及其 95% CI')}`, dpPH(zh, 'difference or ratio with CI'))]
+    ], [26, 74]);
+}
+
+function dpAbbrevTable(zh) {
+  return dpTbl([dpT(zh, '缩写', 'Abbrev.'), dpT(zh, '全称', 'Full term')], [
+    ['AE / SAE', dpT(zh, '不良事件／严重不良事件', 'Adverse event / serious adverse event')],
+    ['SUSAR', dpT(zh, '可疑且非预期严重不良反应', 'Suspected unexpected serious adverse reaction')],
+    ['FAS / PPS / SS', dpT(zh, '全分析集／符合方案集／安全性分析集', 'Full / per-protocol / safety analysis set')],
+    ['ITT', dpT(zh, '意向性治疗', 'Intention-to-treat')],
+    ['ANCOVA / MMRM', dpT(zh, '协方差分析／混合效应模型重复测量', 'Analysis of covariance / mixed model repeated measures')],
+    ['MI', dpT(zh, '多重插补', 'Multiple imputation')],
+    ['EDC / SDV', dpT(zh, '电子数据采集系统／源数据核查', 'Electronic data capture / source data verification')],
+    ['SoA', dpT(zh, '研究流程表', 'Schedule of activities')],
+    ['EAC / DSMB', dpT(zh, '终点裁定委员会／数据安全监查委员会', 'Endpoint adjudication / data safety monitoring board')],
+    ['GCP / IRB', dpT(zh, '药物临床试验质量管理规范／伦理委员会', 'Good clinical practice / institutional review board')]
+  ], [24, 76]);
+}
+
+function dpWithdrawalList(zh) {
+  return dpP(dpT(zh, '受试者可在任何时间退出研究，研究者亦可基于安全性或依从性判断终止其参与。具体情形包括：', 'Subjects may withdraw at any time; investigators may discontinue participation for safety or compliance reasons:'))
+    + dpUL([dpT(zh, '受试者撤回知情同意；', 'Withdrawal of consent;'),
+      dpT(zh, '发生需永久停药的 AE/SAE；', 'AE/SAE requiring permanent discontinuation;'),
+      dpT(zh, '妊娠；', 'Pregnancy;'),
+      dpT(zh, '疾病进展或需更换治疗方案；', 'Disease progression;'),
+      dpT(zh, '严重方案违背或依从性差且无法纠正；', 'Major deviation or poor adherence;'),
+      dpT(zh, '失访；', 'Loss to follow-up;'),
+      dpT(zh, '研究者判断继续参与不符合受试者最佳利益；', 'Investigator judgment;'),
+      dpT(zh, '死亡。', 'Death.')])
+    + dpP(dpT(zh, `退出者须完成${dpPH(zh, '退出访视与安全性随访（如适用）')}，并记录退出原因与日期；已收集数据按分析集定义纳入分析，不因退出而删除。`,
+      `Withdrawing subjects complete an early termination visit where applicable; collected data are retained in the analysis.`));
+}
+
+function dpSynopsisLead(zh) {
+  return dpP(dpT(zh,
+    `本研究设计为「${dpDg(zh)}」，${state.centerType === 'multi' ? `由 ${state.centerCount || 'X'} 家中心共同开展` : '在单中心开展'}，计划纳入 ${dpN(zh)} 例${dpDz(zh)}患者，按预设比例随机分为试验组（${dpIv(zh)}）与对照组（${dpCt(zh)}），以「${dpEp(zh)}」为主要疗效终点，预计研究周期 ${dpPH(zh, 'X 个月')}。主要目的是评价试验组相较于对照组的${dpPH(zh, '疗效与安全性')}；次要目的与探索性目的见相应章节。下表为研究概要，详细设计见正文各章。`,
+    `This ${dpDg(zh)} plans to enrol ${dpN(zh)} patients with ${dpDz(zh)} at ${dpCenters(zh)}, randomised to ${dpIv(zh)} or ${dpCt(zh)}, with "${dpEp(zh)}" as the primary endpoint. The table below summarises the study.`));
+}
+
 function buildProtocolWord(zh) {
+  const out = [];
+  let n = 0;
   const S = state;
-  const sec = (num, title, body) => `<h2>${num} ${title}</h2>${body}`;
-  const sub = (title, body) => `<h3>${title}</h3>${body || `<p>${ph()}</p>`}`;
-  let h = buildSynopsis(zh);
+  const add = (title, body) => {
+    const label = zh ? (DP_CN_NUM[n] || (n + 1)) + '、' : (n + 1) + '.';
+    n++;
+    out.push(`<h2>${label} ${title}</h2>${body || ''}`);
+  };
+  /* 摘要不占章节序号（中文方案惯例：一、自研究背景起） */
+  const addSyn = (title, body) => out.push(`<h2>${title}</h2>${body || ''}`);
+  const syn = buildSynopsis(zh);
 
   if (S.researchType === 'realworld') {
-    h += sec(zh ? '一、' : '1.', zh ? '研究背景与立题依据' : 'Background & Rationale',
-      `<p>${ph(zh ? '临床需求、RWD 数据来源、FDA RWE 适用性分析' : 'TBD')}</p>`)
-    + sec(zh ? '二、' : '2.', zh ? '研究目的' : 'Objectives',
-      sub(zh ? '2.1 主要目的' : '2.1 Primary', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
-      + sub(zh ? '2.2 次要目的' : '2.2 Secondary', ulOf(S.secondaryEndpoints)))
-    + sec(zh ? '三、' : '3.', zh ? 'RWE 三步评估框架' : 'RWE 3-Step Framework',
-      sub(zh ? '3.1 数据适用性评估（Fit for Purpose）' : '3.1 Data Fitness')
-      + sub(zh ? '3.2 研究设计科学性评估' : '3.2 Design Validity', `<p>${zh ? '样本量' : 'N'}：${esc(S.sampleSize) || ph()}</p>`)
-      + sub(zh ? '3.3 研究执行合规性评估' : '3.3 Execution Compliance'))
-    + sec(zh ? '四、' : '4.', zh ? '研究人群与数据来源' : 'Population & Data Sources', '')
-    + sec(zh ? '五、' : '5.', zh ? '统计分析计划' : 'Statistical Analysis', `<p>${ph(zh ? '倾向性评分匹配 / 工具变量 / 阴性对照等' : 'PSM / IV / negative controls')}</p>`)
-    + sec(zh ? '六、' : '6.', zh ? '伦理与数据安全' : 'Ethics & Data Security', '');
-  } else if (S.researchType === 'postmarketing') {
-    h += sec(zh ? '一、' : '1.', zh ? '研究背景与法规依据' : 'Background & Regulatory Basis',
-      sub(zh ? '1.1 药品获批背景与新安全信号' : '1.1 Approval Background')
-      + sub(zh ? '1.2 FDA 505(o)(3) 要求依据' : '1.2 FDAAA 505(o)(3) Basis')
-      + sub(zh ? '1.3 PMR / PMC 类型判定' : '1.3 PMR vs PMC Classification'))
-    + sec(zh ? '二、' : '2.', zh ? '研究目的' : 'Objectives', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
-    + sec(zh ? '三、' : '3.', zh ? '研究设计与方法' : 'Design & Methods',
-      `<p>${zh ? '样本量' : 'N'}：${esc(S.sampleSize) || ph()}</p>`)
-    + sec(zh ? '四、' : '4.', zh ? '研究时间表与里程碑' : 'Milestones',
-      `<table><tr><th>${zh ? '里程碑' : 'Milestone'}</th><th>${zh ? '计划日期' : 'Date'}</th></tr>
-      <tr><td>${zh ? '方案提交' : 'Protocol submission'}</td><td>${ph()}</td></tr>
-      <tr><td>${zh ? '首例入组' : 'First patient in'}</td><td>${ph()}</td></tr>
-      <tr><td>${zh ? '末例随访' : 'Last follow-up'}</td><td>${ph()}</td></tr>
-      <tr><td>${zh ? '最终报告' : 'Final report'}</td><td>${ph()}</td></tr></table>`)
-    + sec(zh ? '五、' : '5.', zh ? '数据收集与统计分析' : 'Data & Statistics', '')
-    + sec(zh ? '六、' : '6.', zh ? '伦理与参与者保护' : 'Ethics', '')
-    + sec(zh ? '七、' : '7.', zh ? '研究进展报告要求' : 'Progress Reporting', `<p>${ph(zh ? '年度报告内容、入组进度' : 'Annual report, enrollment')}</p>`);
-  } else if (S.researchType === 'observational') {
-    h += sec(zh ? '一、' : '1.', zh ? '研究背景与立项依据' : 'Background', '')
-    + sec(zh ? '二、' : '2.', zh ? '研究目的与研究假设' : 'Objectives & Hypothesis', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
-    + sec(zh ? '三、' : '3.', zh ? '研究设计' : 'Design',
-      sub(zh ? '3.1 研究现场与时间范围' : '3.1 Setting')
-      + sub(zh ? '3.2 研究对象与来源' : '3.2 Population')
-      + sub(zh ? '3.3 样本量估算与依据' : '3.3 Sample Size', `<p>${esc(S.sampleSize) || ph()}</p>`))
-    + sec(zh ? '四、' : '4.', zh ? '研究内容与变量定义' : 'Variables',
-      sub(zh ? '4.1 暴露因素定义与测量' : '4.1 Exposure')
-      + sub(zh ? '4.2 结局指标定义与判定' : '4.2 Outcomes')
-      + sub(zh ? '4.3 混杂因素与协变量' : '4.3 Confounders'))
-    + sec(zh ? '五、' : '5.', zh ? '随访计划（前瞻性适用）' : 'Follow-up', '')
-    + sec(zh ? '六、' : '6.', zh ? '偏倚控制策略' : 'Bias Control', '')
-    + sec(zh ? '七、' : '7.', zh ? '数据管理与质量控制' : 'Data Management', '')
-    + sec(zh ? '八、' : '8.', zh ? '统计分析方案' : 'Statistical Analysis', '')
-    + sec(zh ? '九、' : '9.', zh ? '伦理审查与知情同意' : 'Ethics & Consent', `<p>${ph(zh ? '回顾性研究涉及豁免知情的，须向伦理委员会正式申请' : 'Waiver of consent requires IRB approval')}</p>`)
-    + sec(zh ? '十、' : '10.', zh ? '研究进度与组织管理' : 'Timeline', '')
-    + sec(zh ? '十一、' : '11.', zh ? '参考文献' : 'References', '');
-  } else if (S.researchType === 'diagnostic') {
-    h += sec(zh ? '一、' : '1.', zh ? '研究背景（STARD 对齐）' : 'Background (STARD-aligned)', '')
-    + sec(zh ? '二、' : '2.', zh ? '研究目的' : 'Objectives', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
-    + sec(zh ? '三、' : '3.', zh ? '研究设计与人群' : 'Design & Population',
-      sub(zh ? '3.1 待评价试验方法' : '3.1 Index Test', `<p>${esc(S.intervention) || ph()}</p>`)
-      + sub(zh ? '3.2 金标准/参比方法' : '3.2 Reference Standard', `<p>${esc(S.control) || ph()}</p>`)
-      + sub(zh ? '3.3 样本量' : '3.3 Sample Size', `<p>${esc(S.sampleSize) || ph()}</p>`))
-    + sec(zh ? '四、' : '4.', zh ? '评价指标（灵敏度/特异度/ROC）' : 'Accuracy Measures', '')
-    + sec(zh ? '五、' : '5.', zh ? '统计分析计划' : 'Statistics', '')
-    + sec(zh ? '六、' : '6.', zh ? '伦理与质量控制' : 'Ethics & QC', '');
-  } else if (S.templateVersion === 'international') {
-    const secs = zh ? [
-      ['方案总结（概要、试验示意图、研究时间表 SoA）'], ['研究背景与获益风险评估'],
-      ['试验目的、终点与被估量（Estimand，对齐 ICH E9(R1)）'], ['试验设计'],
-      ['研究人群（入选/排除标准）'], ['试验干预与对照（随机化、设盲、合并用药）'],
-      ['试验干预中止与参与者退出'], ['评估与检测（有效性、安全性、AE/SAE）'],
-      ['统计学考虑（分析集、缺失值、敏感性分析、期中分析）'], ['伦理与监管'],
-      ['数据质量与源数据管理（ICH E6(R3)）'], ['不良事件因果关系判定'],
-      ['质量源于设计（QbD）与风险控制计划'], ['缩略语与术语定义'], ['参考文献']
-    ] : [
-      ['Protocol Summary & SoA'], ['Background & Benefit-Risk'], ['Objectives, Endpoints & Estimands (ICH E9(R1))'],
-      ['Trial Design'], ['Study Population'], ['Interventions & Controls'], ['Discontinuation & Withdrawal'],
-      ['Assessments (Efficacy, Safety, AE/SAE)'], ['Statistical Considerations'], ['Ethics & Regulatory'],
-      ['Data Quality & Source Data (E6(R3))'], ['AE Causality'], ['QbD & Risk Control'], ['Abbreviations'], ['References']
-    ];
-    secs.forEach((s, i) => {
-      let body = '';
-      if (i === 4) body = sub(zh ? '入选标准' : 'Inclusion', ulOf(S.inclusionCriteria)) + sub(zh ? '排除标准' : 'Exclusion', ulOf(S.exclusionCriteria));
-      h += sec((i + 1) + '.', s[0], body);
-    });
-  } else {
-    /* 国内 IIT 适配版（版本B，16 章） */
-    h += sec(zh ? '一、' : '1.', zh ? '研究背景与立项依据' : 'Background & Rationale',
-      `<p>${zh ? '适应症' : 'Indication'}：${esc(S.disease) || ph()}</p><p>${ph(zh ? '国内外研究现状、证据缺口、立项依据' : 'TBD')}</p>`)
-    + sec(zh ? '二、' : '2.', zh ? '研究目的' : 'Objectives',
-      sub(zh ? '2.1 主要目的' : '2.1 Primary', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
-      + sub(zh ? '2.2 次要目的' : '2.2 Secondary', ulOf(S.secondaryEndpoints))
-      + sub(zh ? '2.3 探索性目的' : '2.3 Exploratory'))
-    + sec(zh ? '三、' : '3.', zh ? '研究设计' : 'Study Design',
-      sub(zh ? '3.1 研究现场与研究人群' : '3.1 Setting & Population')
-      + sub(zh ? '3.2 分组与随机化/设盲方案' : '3.2 Randomization & Blinding')
-      + sub(zh ? '3.3 干预措施与对照选择' : '3.3 Intervention & Control',
-        `<p>${zh ? '试验组' : 'Treatment'}：${esc(S.intervention) || ph()}</p><p>${zh ? '对照组' : 'Control'}：${esc(S.control) || ph()}</p>`)
-      + sub(zh ? '3.4 随访计划与研究流程图' : '3.4 Follow-up & Flow Chart')
-      + sub(zh ? '3.5 结局指标定义与测量方法' : '3.5 Outcome Definitions')
-      + sub(zh ? '3.6 样本量估算与依据' : '3.6 Sample Size',
-        `<p>${zh ? '计划样本量' : 'Planned N'}：${esc(S.sampleSize) || ph(zh ? '待估算' : 'TBD')} ${zh ? '例' : ''}</p><p>${ph(zh ? '估算公式、参数依据（α、检验效能、预期效应值、脱落率）' : 'Formula & assumptions')}</p>`))
-    + sec(zh ? '四、' : '4.', zh ? '研究人群' : 'Study Population',
-      sub(zh ? '4.1 入选标准' : '4.1 Inclusion Criteria', ulOf(S.inclusionCriteria))
-      + sub(zh ? '4.2 排除标准' : '4.2 Exclusion Criteria', ulOf(S.exclusionCriteria))
-      + sub(zh ? '4.3 退出/脱落/终止标准' : '4.3 Withdrawal Criteria'))
-    + sec(zh ? '五、' : '5.', zh ? '干预方案与研究程序' : 'Intervention & Procedures',
-      sub(zh ? '5.1 干预措施详情' : '5.1 Intervention Details')
-      + sub(zh ? '5.2 剂量调整与中止规则' : '5.2 Dose Modification')
-      + sub(zh ? '5.3 合并用药与禁忌' : '5.3 Concomitant Medication')
-      + sub(zh ? '5.4 依从性管理' : '5.4 Adherence'))
-    + sec(zh ? '六、' : '6.', zh ? '疗效与安全性评价' : 'Efficacy & Safety Evaluation', '')
-    + sec(zh ? '七、' : '7.', zh ? '不良事件管理与报告' : 'AE Management & Reporting', '')
-    + sec(zh ? '八、' : '8.', zh ? '数据管理' : 'Data Management',
-      sub(zh ? '8.1 CRF 设计与数据录入' : '8.1 CRF & Entry') + sub(zh ? '8.2 数据核查与锁定' : '8.2 Cleaning & Locking') + sub(zh ? '8.3 数据存档与保密' : '8.3 Archiving'))
-    + sec(zh ? '九、' : '9.', zh ? '统计分析计划' : 'Statistical Analysis Plan', `<p>${ph(zh ? '分析集定义、统计方法、缺失值处理、敏感性分析' : 'Analysis sets, methods, missing data, sensitivity')}</p>`)
-    + sec(zh ? '十、' : '10.', zh ? '伦理与受试者保护' : 'Ethics & Protection',
-      sub(zh ? '10.1 伦理审查安排' : '10.1 IRB Review') + sub(zh ? '10.2 知情同意流程' : '10.2 Informed Consent')
-      + sub(zh ? '10.3 风险获益评估与保障' : '10.3 Risk-Benefit') + sub(zh ? '10.4 隐私与利益冲突' : '10.4 Privacy & COI'))
-    + sec(zh ? '十一、' : '11.', zh ? '研究管理与质量控制' : 'Management & QC',
-      sub(zh ? '11.1 方案修订流程' : '11.1 Amendments') + sub(zh ? '11.2 监查计划与质量保证' : '11.2 Monitoring') + sub(zh ? '11.3 提前终止规则' : '11.3 Early Termination'))
-    + sec(zh ? '十二、' : '12.', zh ? '进度安排与组织架构' : 'Timeline & Organization', '')
-    + sec(zh ? '十三、' : '13.', zh ? '经费预算' : 'Budget', `<p>${ph(zh ? '详见配套《经费预算表》' : 'See Budget Table')}</p>`)
-    + sec(zh ? '十四、' : '14.', zh ? '可行性分析与创新点' : 'Feasibility & Innovation', '')
-    + sec(zh ? '十五、' : '15.', zh ? '参考文献' : 'References', '')
-    + sec(zh ? '十六、' : '16.', zh ? '附件' : 'Appendices', `<p>${zh ? 'CRF、ICF、审批文件等（见本文件后续配套文档）' : 'CRF, ICF, approvals (see attached documents)'}</p>`);
+    addSyn(dpT(zh, '研究摘要', 'Synopsis'), dpSynopsisLead(zh) + syn);
+    add(dpT(zh, '研究背景与立题依据', 'Background & Rationale'), dpBackground(zh));
+    add(dpT(zh, '研究目的', 'Objectives'), dpObjectives(zh));
+    add(dpT(zh, 'RWE 三步评估框架', 'RWE Three-Step Framework'), dpRweFramework(zh));
+    add(dpT(zh, '研究人群与数据来源', 'Population & Data Sources'), dpRweData(zh));
+    add(dpT(zh, '统计分析计划', 'Statistical Analysis Plan'), dpStats(zh) + dpRweBias(zh));
+    add(dpT(zh, '伦理与数据安全', 'Ethics & Data Security'), dpEthics(zh) + dpDataMgmt(zh));
+    return out.join('');
   }
-  return h;
+
+  if (S.researchType === 'postmarketing') {
+    addSyn(dpT(zh, '研究摘要', 'Synopsis'), dpSynopsisLead(zh) + syn);
+    add(dpT(zh, '研究背景与法规依据', 'Background & Regulatory Basis'), dpBackground(zh) + dpPmrRegulatory(zh));
+    add(dpT(zh, '研究目的', 'Objectives'), dpObjectives(zh));
+    add(dpT(zh, '研究设计与方法', 'Design & Methods'), dpDesignCore(zh) + `<h3>${dpT(zh, '样本量估算与依据', 'Sample size')}</h3>` + dpSSBasis(zh));
+    add(dpT(zh, '研究时间表与里程碑', 'Timeline & Milestones'), dpPmrMilestones(zh) + dpTimeline(zh));
+    add(dpT(zh, '数据收集与统计分析', 'Data & Statistics'), dpDataMgmt(zh) + dpStats(zh) + dpAE(zh));
+    add(dpT(zh, '伦理与参与者保护', 'Ethics & Participant Protection'), dpEthics(zh));
+    add(dpT(zh, '研究进展报告要求', 'Progress Reporting'), dpPmrReport(zh));
+    return out.join('');
+  }
+
+  if (S.researchType === 'observational') {
+    addSyn(dpT(zh, '研究摘要', 'Synopsis'), dpSynopsisLead(zh) + syn);
+    add(dpT(zh, '研究背景与立项依据', 'Background & Rationale'), dpBackground(zh));
+    add(dpT(zh, '研究目的与研究假设', 'Objectives & Hypotheses'), dpObjectives(zh));
+    add(dpT(zh, '研究设计', 'Study Design'), dpObsDesign(zh));
+    add(dpT(zh, '研究内容与变量定义', 'Variables & Definitions'), dpObsVars(zh));
+    add(dpT(zh, '随访计划', 'Follow-up'), dpWithdrawalList(zh));
+    add(dpT(zh, '偏倚控制策略', 'Bias Control'), dpRweBias(zh));
+    add(dpT(zh, '数据管理与质量控制', 'Data Management & QC'), dpDataMgmt(zh));
+    add(dpT(zh, '统计分析方案', 'Statistical Analysis'), dpObsStats(zh));
+    add(dpT(zh, '伦理审查与知情同意', 'Ethics & Consent'), dpEthics(zh)
+      + dpP(dpT(zh, `回顾性研究申请豁免知情同意的，须向伦理委员会提交书面申请，说明${dpPH(zh, '研究使用的最小数据集、去标识化措施、无法联系受试者的客观原因、不豁免将导致研究不可行且风险不大于最小风险')}，经批准后方可实施。`,
+        `A waiver of consent must be formally requested, justified and approved by the IRB.`)));
+    add(dpT(zh, '研究进度与组织管理', 'Timeline & Organisation'), dpTimeline(zh) + dpMgmt(zh));
+    add(dpT(zh, '参考文献', 'References'), dpRefs(zh));
+    return out.join('');
+  }
+
+  if (S.researchType === 'diagnostic') {
+    addSyn(dpT(zh, '研究摘要', 'Synopsis'), dpSynopsisLead(zh) + syn);
+    add(dpT(zh, '研究背景（STARD 对齐）', 'Background (STARD-aligned)'), dpBackground(zh));
+    add(dpT(zh, '研究目的', 'Objectives'), dpObjectives(zh));
+    add(dpT(zh, '研究设计与人群', 'Design & Population'), dpDiagDesign(zh) + dpPopulation(zh));
+    add(dpT(zh, '评价指标（灵敏度/特异度/ROC）', 'Accuracy Measures'), dpDiagAccuracy(zh));
+    add(dpT(zh, '统计分析计划', 'Statistical Analysis Plan'), dpObsStats(zh)
+      + dpP(dpT(zh, `诊断准确度分析在${dpPH(zh, '全分析集')}中进行，缺失的待评价试验结果按${dpPH(zh, '不确定结果处理规则')}归类；统计软件为 ${dpPH(zh, 'SAS 9.4/R 4.3')}。`,
+        `Accuracy analyses use the full analysis set; indeterminate results follow pre-specified rules.`)));
+    add(dpT(zh, '伦理与质量控制', 'Ethics & Quality Control'), dpEthics(zh) + dpMgmt(zh));
+    add(dpT(zh, '参考文献', 'References'), dpRefs(zh));
+    return out.join('');
+  }
+
+  /* 干预性研究：国内 IIT 版 vs 国际注册版 */
+  if (S.templateVersion === 'international') {
+    add(dpT(zh, '方案总结', 'Protocol Summary'), syn + `<h3>${dpT(zh, '研究流程表（SoA）', 'Schedule of Activities')}</h3>`
+      + dpP(dpT(zh, '各访视的具体操作见第四章"试验设计"中的流程表。', 'See the SoA in Section 4.')));
+    add(dpT(zh, '研究背景与获益风险评估', 'Background & Benefit-Risk'), dpBackground(zh)
+      + dpP(dpT(zh, `获益风险评估：${dpIv(zh)}的已知风险包括${dpPH(zh, '主要不良反应及发生率')}，已通过${dpPH(zh, '入排标准、剂量调整、监测计划')}予以控制；预期获益为${dpPH(zh, '主要疗效获益')}。综合判断风险可控、获益—风险比可接受。`,
+        `Benefit-risk: known risks of ${dpIv(zh)} are ${dpPH(zh, 'key AEs')}, mitigated by eligibility criteria, dose rules and monitoring.`)));
+    add(dpT(zh, '试验目的、终点与估计目标', 'Objectives, Endpoints & Estimands'), dpObjectives(zh) + dpEstimandTable(zh));
+    add(dpT(zh, '试验设计', 'Trial Design'), dpDesignCore(zh) + `<h3>${dpT(zh, '样本量估算与依据', 'Sample size')}</h3>` + dpSSBasis(zh));
+    add(dpT(zh, '研究人群', 'Study Population'), dpPopulation(zh));
+    add(dpT(zh, '试验干预与对照', 'Interventions & Controls'), dpIntervention(zh));
+    add(dpT(zh, '试验干预中止与参与者退出', 'Discontinuation & Withdrawal'), dpWithdrawalList(zh));
+    add(dpT(zh, '评估与检测', 'Assessments'), dpOutcomes(zh) + dpSafetyEval(zh));
+    add(dpT(zh, '统计学考虑', 'Statistical Considerations'), dpStats(zh));
+    add(dpT(zh, '伦理与监管', 'Ethics & Regulatory'), dpEthics(zh));
+    add(dpT(zh, '数据质量与源数据管理（ICH E6(R3)）', 'Data Quality & Source Data (E6(R3))'), dpDataMgmt(zh)
+      + dpP(dpT(zh, `按 ICH E6(R3) 要求，研究应建立${dpPH(zh, '以风险为基础的质量管理体系')}：明确关键质量因素、设置可接受的风险容忍度、通过${dpPH(zh, '监查、稽查、KRI 监测')}持续验证数据完整性与受试者保护措施的有效性；源数据须可归因、易读、同步、原始、准确（ALCOA+ 原则）。`,
+        `Per ICH E6(R3), a risk-based quality management system with critical-to-quality factors, tolerance limits and ALCOA+ source data is implemented.`)));
+    add(dpT(zh, '不良事件因果关系判定', 'AE Causality Assessment'), dpAE(zh));
+    add(dpT(zh, '质量源于设计（QbD）与风险控制', 'QbD & Risk Control'), dpMgmt(zh));
+    add(dpT(zh, '缩略语', 'Abbreviations'), dpAbbrevTable(zh));
+    add(dpT(zh, '参考文献', 'References'), dpRefs(zh));
+    return out.join('');
+  }
+
+  /* 国内 IIT 适配版（16 章） */
+  addSyn(dpT(zh, '研究摘要', 'Synopsis'), dpSynopsisLead(zh) + syn);
+  add(dpT(zh, '研究背景与立项依据', 'Background & Rationale'), dpBackground(zh));
+  add(dpT(zh, '研究目的', 'Objectives'), dpObjectives(zh));
+  add(dpT(zh, '研究设计', 'Study Design'), dpDesignCore(zh) + `<h3>${dpT(zh, '样本量估算与依据', 'Sample size')}</h3>` + dpSSBasis(zh));
+  add(dpT(zh, '研究人群', 'Study Population'), dpPopulation(zh));
+  add(dpT(zh, '干预方案与研究程序', 'Intervention & Procedures'), dpIntervention(zh));
+  add(dpT(zh, '疗效与安全性评价', 'Efficacy & Safety Evaluation'), dpOutcomes(zh) + dpSafetyEval(zh));
+  add(dpT(zh, '不良事件管理与报告', 'AE Management & Reporting'), dpAE(zh));
+  add(dpT(zh, '数据管理', 'Data Management'), dpDataMgmt(zh));
+  add(dpT(zh, '统计分析计划', 'Statistical Analysis Plan'), dpStats(zh));
+  add(dpT(zh, '伦理与受试者保护', 'Ethics & Subject Protection'), dpEthics(zh));
+  add(dpT(zh, '研究管理与质量控制', 'Management & Quality Control'), dpMgmt(zh));
+  add(dpT(zh, '进度安排与组织架构', 'Timeline & Organisation'), dpTimeline(zh));
+  add(dpT(zh, '经费预算', 'Budget'), dpBudget(zh));
+  add(dpT(zh, '可行性分析与创新点', 'Feasibility & Innovation'), dpFeasibility(zh)
+    + dpP(dpT(zh, `创新点：${dpPH(zh, '（1）首次在……人群中验证……；（2）采用……作为主要终点并引入……客观评价；（3）建立……随访体系，为后续研究提供队列基础。')}`,
+      `Innovation: ${dpPH(zh, 'first evaluation in this population; objective endpoint; established follow-up cohort')}.`)));
+  add(dpT(zh, '参考文献', 'References'), dpRefs(zh));
+  add(dpT(zh, '附件', 'Appendices'), dpAppendix(zh));
+  return out.join('');
 }
 
 /* ===== 配套文档模板生成器 ===== */
