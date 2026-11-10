@@ -1003,8 +1003,8 @@
   .preview-content th {
     background: rgba(201, 169, 97, 0.12);
     font-weight: 600;
-    white-space: nowrap;
   }
+  .preview-content td, .preview-content th { word-break: break-word; }
   .preview-content .placeholder { color: #c0392b; }
   .preview-content .section { margin-bottom: 14px; }
   .preview-content .section-title {
@@ -2211,6 +2211,7 @@ function calcSS() {
     methodZh: methodMap[m][0], methodEn: methodMap[m][1],
     alphaZh: aTxt[0], alphaEn: aTxt[1],
     power: powerMap[String(zb)] || 0.8,
+    dropout: dropout,
     desc: desc, perGroup: perGroup, total: total, inflated: inflated, twoGroup: twoGroup
   };
   const res = document.getElementById('ss-result');
