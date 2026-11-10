@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinical Protocol Designer | 临床研究方案设计助手</title>
+<style>
+  :root {
+    --primary: #0a1f3d;
+    --primary-light: #15407a;
+    --primary-glow: rgba(21, 64, 122, 0.15);
+    --accent: #c9a961;
+    --accent-light: #e8d5a3;
+    --accent-glow: rgba(201, 169, 97, 0.2);
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #1a2332;
+    --text-secondary: #5a6d82;
+    --border: #e2e8f0;
+    --success: #2d8659;
+    --shadow-sm: 0 2px 8px rgba(10, 31, 61, 0.06);
+    --shadow: 0 4px 20px rgba(10, 31, 61, 0.08);
+    --shadow-lg: 0 12px 40px rgba(10, 31, 61, 0.12);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* 页面加载动画 */
+  .loader {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--primary);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+  .loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .loader-content {
+    text-align: center;
+    color: white;
+  }
+  .loader-circle {
+    width: 50px; height: 50px;
+    border: 3px solid rgba(255,255,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .loader-text {
+    font-size: 14px;
+    opacity: 0.8;
+    letter-spacing: 2px;
+  }
+
+  /* 顶部导航 */
+  .header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -20%;
+    width: 60%; height: 200%;
+    background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+    animation: float 8s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .header-content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 40px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    z-index: 1;
+  }
+  .header-left h1 {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #ffffff 0%, var(--accent-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-left .subtitle {
+    font-size: 13px;
+    opacity: 0.85;
+    font-weight: 300;
+  }
+  .header-left .subtitle-en {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  /* 语言切换 */
+  .lang-switch {
+    display: flex;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 24px;
+    padding: 3px;
+    backdrop-filter: blur(10px);
+  }
+  .lang-btn {
+    padding: 7px 18px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 20px;
+    transition: var(--transition);
+    font-weight: 500;
+  }
+  .lang-btn.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+
+  /* 规范标签栏 */
+  .standards-bar {
+    background: rgba(255,255,255,0.05);
+    padding: 12px 40px;
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+  }
+  .standard-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.7;
+    transition: var(--transition);
+  }
+  .standard-tag:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+  .standard-tag::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  /* 步骤进度条 */
+  .progress-container {
+    background: white;
+    padding: 28px 40px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .progress-bar {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+  }
+  .progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 19px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--border), var(--border));
+    z-index: 0;
+  }
+  .step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    transition: var(--transition);
+  }
+  .step-item:hover .step-circle {
+    transform: scale(1.1);
+  }
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--border);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    transition: var(--transition);
+  }
+  .step-item.active .step-circle {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 0 0 5px var(--primary-glow), 0 4px 15px var(--primary-glow);
+  }
+  .step-item.completed .step-circle {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+  }
+  .step-label {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+    transition: var(--transition);
+  }
+  .step-item.active .step-label {
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* 主内容区 */
+  .main {
+    max-width: 900px;
+    margin: 32px auto;
+    padding: 0 20px;
+  }
+  .step-panel {
+    display: none;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .step-panel.active {
+    display: block;
+    animation: slideIn 0.4s ease forwards;
+  }
+  @keyframes slideIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .step-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--primary);
+  }
+  .step-title-en {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+  .step-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* 选项卡片 */
+  .option-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin-bottom: 28px;
+  }
+  .option-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    cursor: pointer;
+    transition: var(--transition);
+    background: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .option-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: var(--transition);
+  }
+  .option-card:hover {
+    border-color: var(--primary-light);
+    box-shadow: var(--shadow);
+    transform: translateY(-4px);
+  }
+  .option-card:hover::before {
+    transform: scaleX(1);
+  }
+  .option-card.selected {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, #f8fafc 0%, #f0f5fa 100%);
+    box-shadow: 0 0 0 2px var(--primary-glow), var(--shadow);
+  }
+  .option-card.selected::before {
+    transform: scaleX(1);
+  }
+  .option-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 26px; height: 26px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: bold;
+    animation: scaleIn 0.3s ease;
+  }
+  @keyframes scaleIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+  }
+  .option-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f0f5fa 0%, #e8eef5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    font-size: 22px;
+    transition: var(--transition);
+  }
+  .option-card:hover .option-icon {
+    transform: scale(1.1);
+  }
+  .option-card h3 {
+    font-size: 16px;
+    margin-bottom: 4px;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .option-card .en-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    font-weight: 400;
+  }
+  .option-card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .option-tags {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* 标签 */
+  .tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .tag-gold { background: #fdf6e3; color: #b8860b; }
+  .tag-blue { background: #e8f0fe; color: #1a5fb4; }
+  .tag-green { background: #e6f4ea; color: #2d8659; }
+  .tag-purple { background: #f3e8fd; color: #7c3aed; }
+
+  /* 表单 */
+  .form-group { margin-bottom: 22px; }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .form-label-en {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-left: 6px;
+  }
+  .form-label .required { color: #e74c3c; margin-left: 2px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    transition: var(--transition);
+    background: white;
+    color: var(--text);
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-glow);
+  }
+  .form-textarea { min-height: 80px; resize: vertical; }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+
+  /* 复选框组 */
+  .checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .checkbox-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .checkbox-item:hover {
+    border-color: var(--primary-light);
+    box-shadow: var(--shadow-sm);
+  }
+  .checkbox-item input {
+    margin-top: 3px;
+    margin-right: 12px;
+    accent-color: var(--primary);
+    width: 18px; height: 18px;
+  }
+  .checkbox-item .cb-content h4 {
+    font-size: 14px;
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+  .checkbox-item .cb-content .en {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .checkbox-item .cb-content p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* 底部按钮 */
+  .action-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .btn {
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: var(--transition);
+    letter-spacing: 0.3px;
+  }
+  .btn-secondary {
+    background: #f1f5f9;
+    color: var(--text-secondary);
+  }
+  .btn-secondary:hover {
+    background: #e2e8f0;
+    transform: translateY(-1px);
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    box-shadow: 0 4px 15px var(--primary-glow);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--primary-glow);
+  }
+  .btn-primary:disabled {
+    background: #b8c5d6;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--accent) 0%, #b8984f 100%);
+    color: white;
+    box-shadow: 0 4px 15px var(--accent-glow);
+  }
+  .btn-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--accent-glow);
+  }
+
+  /* 预览面板 */
+  .preview-panel {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin-top: 24px;
+    transition: var(--transition);
+  }
+  .preview-panel:hover {
+    box-shadow: var(--shadow-sm);
+  }
+  .preview-panel h4 {
+    font-size: 15px;
+    margin-bottom: 18px;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+  }
+  .preview-panel h4::before {
+    content: '';
+    width: 4px; height: 18px;
+    background: linear-gradient(180deg, var(--accent) 0%, #b8984f 100%);
+    border-radius: 2px;
+  }
+  .preview-content {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.8;
+  }
+  .preview-content .section { margin-bottom: 14px; }
+  .preview-content .section-title {
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  /* 概览卡片 */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .summary-card {
+    background: white;
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    transition: var(--transition);
+  }
+  .summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+  .summary-card .label {
+    color: var(--text-secondary);
+    font-size: 11px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .summary-card .value {
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  /* 核查清单 */
+  .checklist { margin-top: 10px; }
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f3f7;
+    transition: var(--transition);
+  }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-item:hover {
+    background: rgba(255,255,255,0.5);
+    padding-left: 8px;
+  }
+  .checklist-item input {
+    margin-top: 3px;
+    margin-right: 12px;
+    accent-color: var(--success);
+    width: 16px; height: 16px;
+  }
+  .checklist-item .cl-text { font-size: 13px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 16px 28px;
+    border-radius: 12px;
+    font-size: 14px;
+    opacity: 0;
+    transform: translateY(-10px) translateX(20px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+
+  /* 双语隐藏 */
+  .lang-en .zh { display: none; }
+  .lang-zh .en { display: none; }
+
+  /* 响应式 */
+  @media (max-width: 768px) {
+    .header-content { padding: 24px 20px; flex-direction: column; gap: 16px; }
+    .standards-bar { padding: 12px 20px; gap: 12px; }
+    .progress-container { padding: 20px 16px; }
+    .step-label { font-size: 11px; }
+    .option-grid { grid-template-columns: 1fr; gap: 14px; }
+    .form-row { grid-template-columns: 1fr; }
+    .checkbox-group { grid-template-columns: 1fr; }
+    .summary-cards { grid-template-columns: 1fr; }
+    .main { padding: 0 12px; margin: 20px auto; }
+    .step-panel { padding: 24px; }
+    .action-bar { flex-direction: column; gap: 12px; }
+    .action-bar button { width: 100%; }
+  }
+</style>
+</head>
+<body class="lang-zh">
+
+<!-- 加载动画 -->
+<div class="loader" id="loader">
+  <div class="loader-content">
+    <div class="loader-circle"></div>
+    <div class="loader-text">LOADING PROTOCOL DESIGNER</div>
+  </div>
+</div>
+
+<!-- 顶部导航 -->
+<div class="header">
+  <div class="header-content">
+    <div class="header-left">
+      <h1><span class="zh">临床研究方案设计助手</span><span class="en">Clinical Protocol Designer</span></h1>
+      <div class="subtitle zh">融合 ICH GCP · SPIRIT · FDA · RWE · 国内权威模板</div>
+      <div class="subtitle-en en">Integrated with ICH GCP · SPIRIT · FDA · RWE · Domestic Standards</div>
+    </div>
+    <div class="lang-switch">
+      <button class="lang-btn active" onclick="switchLang('zh', this)">中文</button>
+      <button class="lang-btn" onclick="switchLang('en', this)">EN</button>
+    </div>
+  </div>
+  <div class="standards-bar">
+    <div class="standard-tag">ICH E6(R3) GCP</div>
+    <div class="standard-tag">ICH M11</div>
+    <div class="standard-tag">SPIRIT 2013</div>
+    <div class="standard-tag">FDA 505(o)(3)</div>
+    <div class="standard-tag">FDA RWE Program</div>
+    <div class="standard-tag">国内GCP</div>
+  </div>
+</div>
+
+<!-- 步骤进度条 -->
+<div class="progress-container">
+  <div class="progress-bar">
+    <div class="step-item active" data-step="1" onclick="goToStep(1)">
+      <div class="step-circle">1</div>
+      <div class="step-label"><span class="zh">研究类型</span><span class="en">Study Type</span></div>
+    </div>
+    <div class="step-item" data-step="2" onclick="goToStep(2)">
+      <div class="step-circle">2</div>
+      <div class="step-label"><span class="zh">研究设计</span><span class="en">Design</span></div>
+    </div>
+    <div class="step-item" data-step="3" onclick="goToStep(3)">
+      <div class="step-circle">3</div>
+      <div class="step-label"><span class="zh">基础信息</span><span class="en">Details</span></div>
+    </div>
+    <div class="step-item" data-step="4" onclick="goToStep(4)">
+      <div class="step-circle">4</div>
+      <div class="step-label"><span class="zh">配套文档</span><span class="en">Documents</span></div>
+    </div>
+    <div class="step-item" data-step="5" onclick="goToStep(5)">
+      <div class="step-circle">5</div>
+      <div class="step-label"><span class="zh">方案预览</span><span class="en">Preview</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 主内容区 -->
+<div class="main">
+
+  <!-- Step 1: 研究类型 -->
+  <div class="step-panel active" id="panel-1">
+    <div class="step-title"><span class="zh">第一步：选择研究类型</span><span class="en">Step 1: Select Study Type</span></div>
+    <div class="step-title-en"><span class="zh">根据研究性质选择对应的方案模板框架</span><span class="en">Choose the appropriate protocol template framework</span></div>
+    <div class="step-desc zh">系统将根据您的选择自动匹配对应的国际/国内模板与核查标准。</div>
+    <div class="step-desc en">The system will automatically match the corresponding international/domestic template and compliance standards.</div>
+
+    <div class="option-grid">
+      <div class="option-card" data-type="interventional" onclick="selectResearchType(this, 'interventional')">
+        <div class="option-icon">💊</div>
+        <h3><span class="zh">干预性研究</span><span class="en">Interventional Study</span></h3>
+        <div class="en-name">RCT / Single-arm / Crossover</div>
+        <p><span class="zh">主动干预措施的临床试验，含随机对照、单臂、交叉设计</span><span class="en">Clinical trials with active intervention, including RCT, single-arm, crossover designs</span></p>
+        <div class="option-tags">
+          <span class="tag tag-blue">ICH M11</span>
+          <span class="tag tag-blue">SPIRIT</span>
+          <span class="tag tag-gold">GCP E6(R3)</span>
+        </div>
+      </div>
+      <div class="option-card" data-type="observational" onclick="selectResearchType(this, 'observational')">
+        <div class="option-icon">📊</div>
+        <h3><span class="zh">观察性研究</span><span class="en">Observational Study</span></h3>
+        <div class="en-name">Cohort / Case-control / Cross-sectional</div>
+        <p><span class="zh">无主动干预，观察疾病/暴露因素与结局的关联</span><span class="en">No intervention, observing associations between exposures and outcomes</span></p>
+        <div class="option-tags">
+          <span class="tag tag-green">STROBE</span>
+        </div>
+      </div>
+      <div class="option-card" data-type="realworld" onclick="selectResearchType(this, 'realworld')">
+        <div class="option-icon">🌐</div>
+        <h3><span class="zh">真实世界研究</span><span class="en">Real-World Study</span></h3>
+        <div class="en-name">RWE / RWD / External Control</div>
+        <p><span class="zh">基于真实世界数据生成证据，FDA RWE项目框架</span><span class="en">Evidence generated from real-world data, aligned with FDA RWE Program</span></p>
+        <div class="option-tags">
+          <span class="tag tag-purple">FDA RWE</span>
+          <span class="tag tag-green">RWD</span>
+        </div>
+      </div>
+      <div class="option-card" data-type="postmarketing" onclick="selectResearchType(this, 'postmarketing')">
+        <div class="option-icon">🏥</div>
+        <h3><span class="zh">上市后研究</span><span class="en">Postmarketing Study</span></h3>
+        <div class="en-name">PMR / PMC under FDA 505(o)(3)</div>
+        <p><span class="zh">FDA要求的上市后安全性研究，评估已知/未知风险</span><span class="en">FDA-required postmarketing safety studies under 505(o)(3)</span></p>
+        <div class="option-tags">
+          <span class="tag tag-gold">FDA Guidance</span>
+          <span class="tag tag-blue">PMR/PMC</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        <span class="zh">发起主体</span><span class="en">Sponsor Type</span>
+      </label>
+      <div class="form-row">
+        <select class="form-select" id="sponsor-type">
+          <option value="iit"><span class="zh">IIT 研究者发起研究</span><span class="en">IIT Investigator-Initiated</span></option>
+          <option value="sponsor"><span class="zh">申办者发起注册研究</span><span class="en">Sponsor-Initiated Registration</span></option>
+          <option value="hospital"><span class="zh">院内课题</span><span class="en">Hospital Project</span></option>
+          <option value="provincial"><span class="zh">市厅级/省部级课题</span><span class="en">Provincial/Municipal Grant</span></option>
+        </select>
+        <select class="form-select" id="template-version">
+          <option value="domestic"><span class="zh">国内IIT适配版</span><span class="en">Domestic IIT Version</span></option>
+          <option value="international"><span class="zh">国际注册版</span><span class="en">International Registration</span></option>
+        </select>
+      </div>
+      <div class="hint zh">选择模板版本：国内场景推荐「国内IIT适配版」，国际多中心注册推荐「国际注册版」</div>
+      <div class="hint en">Choose template version: Domestic IIT for local ethics, International for multi-center registration</div>
+    </div>
+
+    <div class="action-bar">
+      <div></div>
+      <button class="btn btn-primary" onclick="nextStep()" id="next-1" disabled>
+        <span class="zh">下一步</span><span class="en">Next →</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: 研究设计 -->
+  <div class="step-panel" id="panel-2">
+    <div class="step-title"><span class="zh">第二步：选择研究设计</span><span class="en">Step 2: Select Study Design</span></div>
+    <div class="step-title-en"><span class="zh">根据研究类型，选择具体的研究设计方案</span><span class="en">Choose the specific study design based on study type</span></div>
+    <div class="step-desc zh">不同研究设计对应不同的统计方法、偏倚控制策略和样本量计算方式。</div>
+    <div class="step-desc en">Different designs require different statistical methods, bias control strategies, and sample size calculations.</div>
+
+    <div id="design-options"></div>
+
+    <div class="form-group">
+      <label class="form-label">
+        <span class="zh">研究规模</span><span class="en">Study Scale</span>
+      </label>
+      <div class="form-row">
+        <select class="form-select" id="center-type">
+          <option value="single"><span class="zh">单中心</span><span class="en">Single-center</span></option>
+          <option value="multi"><span class="zh">多中心</span><span class="en">Multi-center</span></option>
+        </select>
+        <input class="form-input" type="number" id="sample-size" placeholder="样本量 / Sample Size (N)" min="1">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        <span class="zh">主要研究终点</span><span class="en">Primary Endpoint</span><span class="required">*</span>
+      </label>
+      <input class="form-input" type="text" id="primary-endpoint" placeholder="如：治疗后12周疾病缓解率 / e.g., Disease remission rate at Week 12">
+      <div class="hint zh">请用简明的医学术语描述主要评价指标</div>
+      <div class="hint en">Describe the primary endpoint in clear medical terms</div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-secondary" onclick="prevStep()"><span class="zh">← 上一步</span><span class="en">← Back</span></button>
+      <button class="btn btn-primary" onclick="nextStep()" id="next-2"><span class="zh">下一步</span><span class="en">Next →</span></button>
+    </div>
+  </div>
+
+  <!-- Step 3: 基础信息 -->
+  <div class="step-panel" id="panel-3">
+    <div class="step-title"><span class="zh">第三步：填写基础信息</span><span class="en">Step 3: Study Details</span></div>
+    <div class="step-title-en"><span class="zh">填写研究核心信息，系统将自动生成方案框架</span><span class="en">Enter core study details, system will generate protocol framework</span></div>
+    <div class="step-desc zh">带 * 为必填项，其余可后续补充。</div>
+    <div class="step-desc en">Fields marked * are required; others can be completed later.</div>
+
+    <div class="form-group">
+      <label class="form-label">
+        <span class="zh">研究项目名称</span><span class="en">Study Title</span><span class="required">*</span>
+      </label>
+      <input class="form-input" type="text" id="project-name" placeholder="如：金纳多注射液治疗急性缺血性脑卒中的多中心RCT / e.g., Multi-center RCT of Ginkgo biloba extract in acute ischemic stroke">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">
+          <span class="zh">疾病/适应症</span><span class="en">Disease/Indication</span><span class="required">*</span>
+        </label>
+        <input class="form-input" type="text" id="disease" placeholder="如：急性缺血性脑卒中">
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          <span class="zh">干预措施/暴露因素</span><span class="en">Intervention/Exposure</span>
+        </label>
+        <input class="form-input" type="text" id="intervention" placeholder="如：金纳多注射液 70mg/日">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">
+          <span class="zh">对照措施</span><span class="en">Comparator</span>
+        </label>
+        <input class="form-input" type="text" id="control" placeholder="如：安慰剂/常规治疗">
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          <span class="zh">研究中心数量</span><span class="en">Number of Centers</span>
+        </label>
+        <input class="form-input" type="number" id="center-count" placeholder="如：5" min="1">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        <span class="zh">次要研究终点</span><span class="en">Secondary Endpoints</span>
+      </label>
+      <textarea class="form-textarea" id="secondary-endpoints" placeholder="每行一个次要终点，如：&#10;- 治疗后24小时NIHSS评分变化&#10;- 治疗后90天mRS评分"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        <span class="zh">纳入标准</span><span class="en">Inclusion Criteria</span>
+      </label>
+      <textarea class="form-textarea" id="inclusion-criteria" placeholder="每行一条纳入标准，如：&#10;- 年龄18-75岁&#10;- 符合急性缺血性脑卒中诊断标准"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        <span class="zh">排除标准</span><span class="en">Exclusion Criteria</span>
+      </label>
+      <textarea class="form-textarea" id="exclusion-criteria" placeholder="每行一条排除标准，如：&#10;- 合并严重心、肝、肾功能不全&#10;- 对研究药物过敏"></textarea>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-secondary" onclick="prevStep()"><span class="zh">← 上一步</span><span class="en">← Back</span></button>
+      <button class="btn btn-primary" onclick="nextStep()" id="next-3"><span class="zh">下一步</span><span class="en">Next →</span></button>
+    </div>
+  </div>
+
+  <!-- Step 4: 配套文档 -->
+  <div class="step-panel" id="panel-4">
+    <div class="step-title"><span class="zh">第四步：选择配套文档</span><span class="en">Step 4: Supporting Documents</span></div>
+    <div class="step-title-en"><span class="zh">勾选需要一并生成的配套文档模板</span><span class="en">Select supporting document templates to generate</span></div>
+    <div class="step-desc zh">所有配套文档均按对应国际/国内标准格式生成。</div>
+    <div class="step-desc en">All documents are generated according to corresponding international/domestic standard formats.</div>
+
+    <div class="checkbox-group">
+      <label class="checkbox-item">
+        <input type="checkbox" value="icf" checked>
+        <div class="cb-content">
+          <h4><span class="zh">知情同意书</span><span class="en">Informed Consent Form</span></h4>
+          <div class="en">ICF</div>
+          <p><span class="zh">含风险告知、权益说明、退出条款等标准模板</span><span class="en">Standard template with risk disclosure, rights, withdrawal clauses</span></p>
+        </div>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" value="crf" checked>
+        <div class="cb-content">
+          <h4><span class="zh">病例报告表</span><span class="en">Case Report Form</span></h4>
+          <div class="en">CRF</div>
+          <p><span class="zh">含基线、随访、不良事件等标准字段模板</span><span class="en">Standard fields for baseline, follow-up, AEs</span></p>
+        </div>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" value="sap" checked>
+        <div class="cb-content">
+          <h4><span class="zh">统计分析计划</span><span class="en">Statistical Analysis Plan</span></h4>
+          <div class="en">SAP</div>
+          <p><span class="zh">含分析集定义、统计方法、缺失值处理、敏感性分析</span><span class="en">Analysis sets, methods, missing data, sensitivity analysis</span></p>
+        </div>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" value="ethics-application">
+        <div class="cb-content">
+          <h4><span class="zh">伦理审查申请函</span><span class="en">Ethics Application</span></h4>
+          <div class="en">IRB Application</div>
+          <p><span class="zh">含研究概况、风险评估、伦理申请标准格式</span><span class="en">Study overview, risk assessment, standard format</span></p>
+        </div>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" value="amendment">
+        <div class="cb-content">
+          <h4><span class="zh">方案修正案模板</span><span class="en">Protocol Amendment</span></h4>
+          <div class="en">Amendment</div>
+          <p><span class="zh">含变更说明、修订理由、版本记录格式</span><span class="en">Change description, rationale, version history</span></p>
+        </div>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" value="ethics-reply">
+        <div class="cb-content">
+          <h4><span class="zh">伦理意见应答函</span><span class="en">Ethics Response Letter</span></h4>
+          <div class="en">Response</div>
+          <p><span class="zh">逐条应答伦理委员会问题的标准格式</span><span class="en">Point-by-point response to IRB questions</span></p>
+        </div>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" value="budget">
+        <div class="cb-content">
+          <h4><span class="zh">经费预算表</span><span class="en">Budget</span></h4>
+          <div class="en">Budget Table</div>
+          <p><span class="zh">含设备、试剂、人员、差旅等科目模板</span><span class="en">Equipment, reagents, personnel, travel categories</span></p>
+        </div>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" value="rwe-assessment">
+        <div class="cb-content">
+          <h4><span class="zh">RWE适用性评估</span><span class="en">RWE Fit-for-Purpose Assessment</span></h4>
+          <div class="en">FDA RWE Framework</div>
+          <p><span class="zh">FDA三步评估法：数据适用性、设计科学性、执行合规性</span><span class="en">FDA 3-step framework: data fitness, design science, execution compliance</span></p>
+        </div>
+      </label>
+    </div>
+
+    <div class="form-group" style="margin-top: 24px;">
+      <label class="form-label">
+        <span class="zh">合规核查要求</span><span class="en">Compliance Checks</span>
+      </label>
+      <div class="checkbox-group">
+        <label class="checkbox-item">
+          <input type="checkbox" value="spirit" checked>
+          <div class="cb-content">
+            <h4>SPIRIT 2013</h4>
+            <div class="en">33-item checklist</div>
+            <p><span class="zh">33项国际标准全覆盖校验</span><span class="en">Full 33-item international standard check</span></p>
+          </div>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" value="gcp" checked>
+          <div class="cb-content">
+            <h4><span class="zh">GCP合规核查</span><span class="en">GCP Compliance</span></h4>
+            <div class="en">ICH E6(R3)</div>
+            <p><span class="zh">ICH E6(R3) 2025 GCP核心原则校验</span><span class="en">ICH E6(R3) 2025 GCP core principles check</span></p>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-secondary" onclick="prevStep()"><span class="zh">← 上一步</span><span class="en">← Back</span></button>
+      <button class="btn btn-gold" onclick="nextStep()" id="next-4">
+        <span class="zh">生成方案预览 →</span><span class="en">Generate Protocol →</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 5: 方案预览 -->
+  <div class="step-panel" id="panel-5">
+    <div class="step-title"><span class="zh">第五步：方案预览与导出</span><span class="en">Step 5: Preview & Export</span></div>
+    <div class="step-title-en"><span class="zh">以下是根据您的选择生成的临床研究方案框架</span><span class="en">Clinical protocol framework generated based on your selections</span></div>
+    <div class="step-desc zh">可复制方案文本，或导出完整文档。所有内容均按对应标准模板生成。</div>
+    <div class="step-desc en">Copy the protocol text or export the full document. All content follows standard template formats.</div>
+
+    <!-- 方案概览 -->
+    <div class="preview-panel" style="background: linear-gradient(135deg, #f8fafc 0%, #f0f5fa 100%);">
+      <h4><span class="zh">方案概览</span><span class="en">Protocol Summary</span></h4>
+      <div class="summary-cards" id="summary-cards"></div>
+    </div>
+
+    <!-- 方案框架预览 -->
+    <div class="preview-panel">
+      <h4><span class="zh">研究方案框架</span><span class="en">Protocol Framework</span></h4>
+      <div class="preview-content" id="protocol-preview"></div>
+    </div>
+
+    <!-- 合规核查清单 -->
+    <div class="preview-panel">
+      <h4><span class="zh">合规核查清单</span><span class="en">Compliance Checklist</span></h4>
+      <div class="checklist" id="checklist-preview"></div>
+    </div>
+
+    <!-- 配套文档清单 -->
+    <div class="preview-panel">
+      <h4><span class="zh">配套文档清单</span><span class="en">Document Checklist</span></h4>
+      <div id="docs-list" style="margin-top: 8px; font-size: 13px;"></div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-secondary" onclick="prevStep()"><span class="zh">← 上一步</span><span class="en">← Back</span></button>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary" onclick="copyProtocol()"><span class="zh">复制方案文本</span><span class="en">Copy Protocol</span></button>
+        <button class="btn btn-primary" onclick="showToast(state.lang === 'zh' ? '已导出（演示版）' : 'Exported (Demo)')">
+          <span class="zh">导出完整文档</span><span class="en">Export Full Document</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// 全局状态
+const state = {
+  currentStep: 1,
+  lang: 'zh',
+  researchType: null,
+  researchDesign: null,
+  sponsorType: 'iit',
+  templateVersion: 'domestic',
+  centerType: 'single',
+  sampleSize: '',
+  primaryEndpoint: '',
+  projectName: '',
+  disease: '',
+  intervention: '',
+  control: '',
+  centerCount: '',
+  secondaryEndpoints: '',
+  inclusionCriteria: '',
+  exclusionCriteria: '',
+  selectedDocs: []
+};
+
+// 双语映射
+const i18n = {
+  type: {
+    interventional: { zh: '干预性研究', en: 'Interventional Study' },
+    observational: { zh: '观察性研究', en: 'Observational Study' },
+    realworld: { zh: '真实世界研究', en: 'Real-World Study' },
+    postmarketing: { zh: '上市后研究', en: 'Postmarketing Study' },
+    diagnostic: { zh: '诊断试验', en: 'Diagnostic Trial' }
+  },
+  design: {
+    rct: { zh: 'RCT 随机对照试验', en: 'Randomized Controlled Trial' },
+    'single-arm': { zh: '单臂试验', en: 'Single-arm Trial' },
+    crossover: { zh: '交叉试验', en: 'Crossover Trial' },
+    'non-inferiority': { zh: '非劣效试验', en: 'Non-inferiority Trial' },
+    cohort: { zh: '队列研究', en: 'Cohort Study' },
+    'case-control': { zh: '病例对照研究', en: 'Case-control Study' },
+    'cross-sectional': { zh: '横断面研究', en: 'Cross-sectional Study' },
+    retrospective: { zh: '回顾性研究', en: 'Retrospective Study' },
+    'rwe-effectiveness': { zh: 'RWE有效性研究', en: 'RWE Effectiveness Study' },
+    'rwe-external-control': { zh: 'RWE外部对照研究', en: 'RWE External Control Study' },
+    pmr: { zh: 'PMR 上市后要求研究', en: 'Postmarketing Requirement (PMR)' },
+    pmc: { zh: 'PMC 上市后承诺研究', en: 'Postmarketing Commitment (PMC)' }
+  },
+  sponsor: {
+    iit: { zh: 'IIT 研究者发起', en: 'IIT Investigator-Initiated' },
+    sponsor: { zh: '申办者发起注册', en: 'Sponsor-Initiated Registration' },
+    hospital: { zh: '院内课题', en: 'Hospital Project' },
+    provincial: { zh: '市厅级/省部级课题', en: 'Provincial Grant' }
+  }
+};
+
+// 研究设计选项映射
+const designOptionsMap = {
+  interventional: [
+    { id: 'rct', name: 'RCT 随机对照试验', nameEn: 'Randomized Controlled Trial', desc: '平行分组、随机化、设盲，金标准设计' },
+    { id: 'single-arm', name: '单臂试验', nameEn: 'Single-arm Trial', desc: '无对照组，单组前后对比' },
+    { id: 'crossover', name: '交叉试验', nameEn: 'Crossover Trial', desc: '自身前后交叉对照设计' },
+    { id: 'non-inferiority', name: '非劣效试验', nameEn: 'Non-inferiority Trial', desc: '验证新疗法不劣于标准疗法' }
+  ],
+  observational: [
+    { id: 'cohort', name: '队列研究', nameEn: 'Cohort Study', desc: '前瞻性/回顾性队列随访' },
+    { id: 'case-control', name: '病例对照研究', nameEn: 'Case-control Study', desc: '病例组与对照组回顾性比较' },
+    { id: 'cross-sectional', name: '横断面研究', nameEn: 'Cross-sectional Study', desc: '某一时点患病率调查' },
+    { id: 'retrospective', name: '回顾性研究', nameEn: 'Retrospective Study', desc: '基于现有病历数据的回顾分析' }
+  ],
+  realworld: [
+    { id: 'rwe-effectiveness', name: 'RWE有效性研究', nameEn: 'RWE Effectiveness Study', desc: '真实世界临床疗效评估，FDA RWE框架' },
+    { id: 'rwe-external-control', name: 'RWE外部对照研究', nameEn: 'RWE External Control Study', desc: '真实世界数据作为单臂试验外部对照' }
+  ],
+  postmarketing: [
+    { id: 'pmr', name: 'PMR 上市后要求', nameEn: 'Postmarketing Requirement', desc: 'FDA强制性上市后研究要求' },
+    { id: 'pmc', name: 'PMC 上市后承诺', nameEn: 'Postmarketing Commitment', desc: '申办者自愿承诺的上市后研究' }
+  ],
+  diagnostic: [
+    { id: 'accuracy', name: '诊断准确性研究', nameEn: 'Diagnostic Accuracy Study', desc: '新诊断方法与金标准对比' }
+  ]
+};
+
+// 语言切换
+function switchLang(lang, btn) {
+  state.lang = lang;
+  document.body.className = lang === 'zh' ? 'lang-zh' : 'lang-en';
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// 选择研究类型
+function selectResearchType(el, type) {
+  document.querySelectorAll('#panel-1 .option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.researchType = type;
+  document.getElementById('next-1').disabled = false;
+}
+
+// 加载研究设计选项
+function loadDesignOptions() {
+  const container = document.getElementById('design-options');
+  const options = designOptionsMap[state.researchType] || [];
+  container.innerHTML = '<div class="option-grid">' + options.map(opt => `
+    <div class="option-card" data-design="${opt.id}" onclick="selectDesign(this, '${opt.id}')">
+      <h3>${opt.name}</h3>
+      <div class="en-name">${opt.nameEn}</div>
+      <p>${opt.desc}</p>
+    </div>
+  `).join('') + '</div>';
+}
+
+function selectDesign(el, design) {
+  document.querySelectorAll('#design-options .option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.researchDesign = design;
+}
+
+// 步骤导航
+function goToStep(n) {
+  if (n < state.currentStep) {
+    state.currentStep = n;
+    updateStepUI();
+  }
+}
+
+function nextStep() {
+  if (state.currentStep === 1 && !state.researchType) {
+    showToast(state.lang === 'zh' ? '请先选择研究类型' : 'Please select a study type first');
+    return;
+  }
+  if (state.currentStep === 2 && !state.researchDesign) {
+    showToast(state.lang === 'zh' ? '请选择研究设计' : 'Please select a study design');
+    return;
+  }
+  state.currentStep++;
+  if (state.currentStep === 2) loadDesignOptions();
+  if (state.currentStep === 5) generatePreview();
+  updateStepUI();
+}
+
+function prevStep() {
+  state.currentStep--;
+  updateStepUI();
+}
+
+function updateStepUI() {
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + state.currentStep);
+  panel.classList.add('active');
+  document.querySelectorAll('.step-item').forEach(item => {
+    const step = parseInt(item.dataset.step);
+    item.classList.remove('active', 'completed');
+    if (step < state.currentStep) item.classList.add('completed');
+    else if (step === state.currentStep) item.classList.add('active');
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Toast
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// 收集表单数据
+function collectFormData() {
+  state.sponsorType = document.getElementById('sponsor-type').value;
+  state.templateVersion = document.getElementById('template-version').value;
+  state.centerType = document.getElementById('center-type').value;
+  state.sampleSize = document.getElementById('sample-size').value;
+  state.primaryEndpoint = document.getElementById('primary-endpoint').value;
+  state.projectName = document.getElementById('project-name').value;
+  state.disease = document.getElementById('disease').value;
+  state.intervention = document.getElementById('intervention').value;
+  state.control = document.getElementById('control').value;
+  state.centerCount = document.getElementById('center-count').value;
+  state.secondaryEndpoints = document.getElementById('secondary-endpoints').value;
+  state.inclusionCriteria = document.getElementById('inclusion-criteria').value;
+  state.exclusionCriteria = document.getElementById('exclusion-criteria').value;
+
+  state.selectedDocs = [];
+  document.querySelectorAll('#panel-4 input[type="checkbox"]:checked').forEach(cb => {
+    state.selectedDocs.push(cb.value);
+  });
+}
+
+// 生成方案文本
+function generateProtocolText() {
+  const isDomestic = state.templateVersion === 'domestic';
+  const typeName = i18n.type[state.researchType]?.[state.lang] || '';
+  const designName = i18n.design[state.researchDesign]?.[state.lang] || '';
+  const projectName = state.projectName || (state.lang === 'zh' ? '【研究项目名称】' : '[Study Title]');
+
+  let text = '';
+  if (state.lang === 'zh') {
+    text += `# ${projectName}\n\n`;
+    text += `**研究类型**：${typeName}\n`;
+    text += `**研究设计**：${designName}\n`;
+    text += `**发起主体**：${i18n.sponsor[state.sponsorType].zh}\n\n`;
+
+    if (state.researchType === 'realworld') {
+      text += `## 一、研究背景与立题依据\n`;
+      text += `【待补充：临床需求、RWD数据来源、FDA RWE适用性分析】\n\n`;
+      text += `## 二、研究目的\n`;
+      text += `**主要目的**：${state.primaryEndpoint || '【待补充】'}\n\n`;
+      text += `## 三、RWE三步评估框架\n`;
+      text += `### 3.1 数据适用性评估（Fit for Purpose）\n`;
+      text += `【待补充：数据来源、数据质量、完整性、代表性】\n\n`;
+      text += `### 3.2 研究设计科学性评估\n`;
+      text += `- 研究设计：${designName}\n`;
+      text += `- 样本量：${state.sampleSize || '【待估算】'}例\n`;
+      text += `- 偏倚控制策略：【待补充】\n\n`;
+      text += `### 3.3 研究执行合规性评估\n`;
+      text += `【待补充：数据治理、伦理审查、隐私保护】\n\n`;
+      text += `## 四、研究人群与数据来源\n`;
+      text += `【待补充：研究人群定义、数据来源（登记数据库/EHR/理赔数据）】\n\n`;
+      text += `## 五、统计分析计划\n`;
+      text += `【待补充：倾向性评分匹配、工具变量、阴性对照等方法】\n\n`;
+      text += `## 六、伦理与数据安全\n`;
+      text += `【待补充：伦理审查、去标识化、数据安全】\n`;
+    } else if (state.researchType === 'postmarketing') {
+      text += `## 一、研究背景与法规依据\n`;
+      text += `【待补充：药品获批背景与新安全信号、FDA 505(o)(3)要求依据】\n\n`;
+      text += `## 二、研究目的\n`;
+      text += `**主要目的**：${state.primaryEndpoint || '【待补充】'}\n\n`;
+      text += `## 三、研究设计与方法\n`;
+      text += `- 研究类型：${typeName}\n`;
+      text += `- 研究设计：${designName}\n`;
+      text += `- 样本量：${state.sampleSize || '【待估算】'}例\n\n`;
+      text += `## 四、研究时间表与里程碑\n`;
+      text += `【待补充：方案提交、首例入组、末例随访、最终报告日期】\n\n`;
+      text += `## 五、数据收集与统计分析\n`;
+      text += `【待补充】\n\n`;
+      text += `## 六、伦理与参与者保护\n`;
+      text += `【待补充】\n\n`;
+      text += `## 七、研究进展报告要求\n`;
+      text += `【待补充：年度报告内容、入组进度报告】\n`;
+    } else if (isDomestic) {
+      text += `## 一、研究背景与立项依据\n`;
+      text += `【待补充：国内外研究现状、证据缺口】\n\n`;
+      text += `## 二、研究目的\n`;
+      text += `**主要目的**：${state.primaryEndpoint || '【待补充】'}\n\n`;
+      text += `## 三、研究设计\n`;
+      text += `- 研究类型：${typeName}\n`;
+      text += `- 研究设计：${designName}\n`;
+      text += `- 研究中心：${state.centerType === 'multi' ? `多中心（${state.centerCount || 'X'}家）` : '单中心'}\n`;
+      text += `- 样本量：${state.sampleSize || '【待估算】'}例\n\n`;
+      text += `## 四、研究人群\n`;
+      text += `### 4.1 纳入标准\n【待补充】\n\n### 4.2 排除标准\n【待补充】\n\n`;
+      text += `## 五、干预方案\n`;
+      text += `- 试验组：${state.intervention || '【待补充】'}\n`;
+      text += `- 对照组：${state.control || '【待补充】'}\n\n`;
+      text += `## 六、疗效与安全性评价\n【待补充】\n\n`;
+      text += `## 七、不良事件管理\n【待补充】\n\n`;
+      text += `## 八、数据管理与统计分析\n【待补充】\n\n`;
+      text += `## 九、伦理与受试者保护\n【待补充】\n\n`;
+      text += `## 参考文献\n【待补充】\n`;
+    } else {
+      text += `# ${projectName}\n\n`;
+      text += `**Study Type**: ${typeName}\n`;
+      text += `**Design**: ${designName}\n\n`;
+      text += `## 1. Introduction & Rationale\n【TBD】\n\n`;
+      text += `## 2. Objectives & Endpoints\n`;
+      text += `**Primary Endpoint**: ${state.primaryEndpoint || '[TBD]'}\n\n`;
+      text += `## 3. Study Design\n【TBD】\n\n`;
+      text += `## 4. Study Population\n【TBD】\n\n`;
+      text += `## 5. Interventions\n【TBD】\n\n`;
+      text += `## 6. Statistical Considerations\n【TBD】\n\n`;
+      text += `## 7. Ethics & Regulatory\n【TBD】\n`;
+    }
+  } else {
+    text += `# ${projectName}\n\n`;
+    text += `**Study Type**: ${typeName}\n`;
+    text += `**Design**: ${designName}\n`;
+    text += `**Sponsor**: ${i18n.sponsor[state.sponsorType].en}\n\n`;
+    text += `## 1. Introduction & Rationale\n【TBD】\n\n`;
+    text += `## 2. Objectives & Endpoints\n`;
+    text += `**Primary Endpoint**: ${state.primaryEndpoint || '[TBD]'}\n\n`;
+    text += `## 3. Study Design\n`;
+    text += `- Type: ${typeName}\n`;
+    text += `- Design: ${designName}\n`;
+    text += `- Centers: ${state.centerType === 'multi' ? `Multi-center (${state.centerCount || 'X'})` : 'Single-center'}\n`;
+    text += `- Sample Size: ${state.sampleSize || '[TBD]'}\n\n`;
+    text += `## 4. Study Population\n【TBD】\n\n`;
+    text += `## 5. Interventions\n`;
+    text += `- Treatment: ${state.intervention || '[TBD]'}\n`;
+    text += `- Control: ${state.control || '[TBD]'}\n\n`;
+    text += `## 6. Statistical Considerations\n【TBD】\n\n`;
+    text += `## 7. Ethics & Regulatory\n【TBD】\n`;
+  }
+
+  return text;
+}
+
+// 生成预览
+function generatePreview() {
+  collectFormData();
+
+  // 概览卡片
+  const summaryEl = document.getElementById('summary-cards');
+  summaryEl.innerHTML = `
+    <div class="summary-card">
+      <div class="label">${state.lang === 'zh' ? '研究类型' : 'Study Type'}</div>
+      <div class="value">${i18n.type[state.researchType]?.[state.lang] || '-'}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">${state.lang === 'zh' ? '研究设计' : 'Study Design'}</div>
+      <div class="value">${i18n.design[state.researchDesign]?.[state.lang] || '-'}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">${state.lang === 'zh' ? '发起主体' : 'Sponsor'}</div>
+      <div class="value">${i18n.sponsor[state.sponsorType]?.[state.lang] || '-'}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">${state.lang === 'zh' ? '模板版本' : 'Template Version'}</div>
+      <div class="value">${state.templateVersion === 'domestic' ? (state.lang === 'zh' ? '国内IIT适配版' : 'Domestic IIT') : (state.lang === 'zh' ? '国际注册版' : 'International')}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">${state.lang === 'zh' ? '研究规模' : 'Scale'}</div>
+      <div class="value">${state.centerType === 'multi' ? `${state.lang === 'zh' ? '多中心' : 'Multi-center'} (${state.centerCount || 'X'})` : (state.lang === 'zh' ? '单中心' : 'Single-center')}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">${state.lang === 'zh' ? '样本量' : 'Sample Size'}</div>
+      <div class="value">${state.sampleSize || (state.lang === 'zh' ? '待估算' : 'TBD')}</div>
+    </div>
+  `;
+
+  // 方案预览
+  const protocolText = generateProtocolText();
+  document.getElementById('protocol-preview').innerHTML = protocolText
+    .replace(/^# (.*)$/m, '<div class="section"><span class="section-title">$1</span></div>')
+    .replace(/^## (.*)$/gm, '<div class="section"><span class="section-title">$1</span></div>')
+    .replace(/\n/g, '<br>');
+
+  // 核查清单
+  const checklistEl = document.getElementById('checklist-preview');
+  let checkItems = state.lang === 'zh' ? [
+    '研究方案版本号、日期、PI签名完整',
+    '入选排除标准清晰可操作，无模糊表述',
+    '主要终点指标定义明确、可测量',
+    '样本量估算依据充分、脱落率设置合理',
+    '风险获益评估明确，风险控制措施具体',
+    '知情同意流程合规，弱势群体保护说明充分',
+    '数据安全、隐私保护、去标识化措施明确',
+    '不良事件报告与处理流程清晰',
+    '研究者资质与研究团队能力说明',
+    '利益冲突声明完整'
+  ] : [
+    'Protocol version, date, and PI signature complete',
+    'Inclusion/exclusion criteria clear and operational',
+    'Primary endpoint clearly defined and measurable',
+    'Sample size justification adequate, dropout rate reasonable',
+    'Risk-benefit assessment clear, control measures specific',
+    'Informed consent process compliant, vulnerable population protected',
+    'Data security, privacy, de-identification measures clear',
+    'AE reporting and handling procedures clear',
+    'Investigator qualifications and team capability described',
+    'Conflict of interest statement complete'
+  ];
+
+  // 如果是RWE研究，增加RWE专项核查项
+  if (state.researchType === 'realworld') {
+    const rweItems = state.lang === 'zh' ? [
+      'RWD数据来源清晰、可追溯',
+      '数据适用性评估完成（Fit for Purpose）',
+      '偏倚控制策略明确（PSM/IV/阴性对照）',
+      '外部对照组可比性分析充分'
+    ] : [
+      'RWD data source clearly identified and traceable',
+      'Data fitness assessment completed (Fit for Purpose)',
+      'Bias control strategy defined (PSM/IV/negative control)',
+      'External control group comparability analysis adequate'
+    ];
+    checkItems = [...checkItems, ...rweItems];
+  }
+
+  checklistEl.innerHTML = checkItems.map(item => `
+    <div class="checklist-item">
+      <input type="checkbox" checked>
+      <span class="cl-text">${item}</span>
+    </div>
+  `).join('');
+
+  // 配套文档清单
+  const docsMap = {
+    icf: { zh: '知情同意书 (ICF)', en: 'Informed Consent Form (ICF)' },
+    crf: { zh: '病例报告表 (CRF)', en: 'Case Report Form (CRF)' },
+    sap: { zh: '统计分析计划 (SAP)', en: 'Statistical Analysis Plan (SAP)' },
+    'ethics-application': { zh: '伦理审查申请函', en: 'Ethics Application' },
+    amendment: { zh: '方案修正案模板', en: 'Protocol Amendment' },
+    'ethics-reply': { zh: '伦理意见应答函', en: 'Ethics Response Letter' },
+    budget: { zh: '经费预算表', en: 'Budget Table' },
+    'rwe-assessment': { zh: 'RWE适用性评估报告', en: 'RWE Fit-for-Purpose Assessment' }
+  };
+  const docsEl = document.getElementById('docs-list');
+  docsEl.innerHTML = state.selectedDocs.map(doc =>
+    `<div style="padding: 4px 0;">📄 ${docsMap[doc]?.[state.lang] || doc}</div>`
+  ).join('');
+}
+
+// 复制方案文本
+function copyProtocol() {
+  const text = generateProtocolText();
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(state.lang === 'zh' ? '方案文本已复制到剪贴板' : 'Protocol text copied to clipboard');
+  }).catch(() => {
+    showToast(state.lang === 'zh' ? '复制失败，请手动选择复制' : 'Copy failed, please select manually');
+  });
+}
+
+// 页面加载完成后隐藏加载动画
+window.addEventListener('load', function() {
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hidden');
+  }, 800);
+});
+</script>
+
+</body>
+</html>
