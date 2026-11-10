@@ -1578,8 +1578,8 @@
       <button class="btn btn-secondary" onclick="prevStep()"><span class="zh">← 上一步</span><span class="en">← Back</span></button>
       <div style="display: flex; gap: 12px;">
         <button class="btn btn-secondary" onclick="copyProtocol()"><span class="zh">复制方案文本</span><span class="en">Copy Protocol</span></button>
-        <button class="btn btn-primary" onclick="showToast(state.lang === 'zh' ? '已导出（演示版）' : 'Exported (Demo)')">
-          <span class="zh">导出完整文档</span><span class="en">Export Full Document</span>
+        <button class="btn btn-gold" onclick="exportWord()">
+          <span class="zh">导出全套 Word 方案</span><span class="en">Export Full Word Package</span>
         </button>
       </div>
     </div>
@@ -2257,6 +2257,327 @@ function fillSS(n) {
   document.getElementById('sample-size').value = n;
   updateMeter();
   showToast(state.lang === 'zh' ? `已填入样本量 ${n} 例` : `Sample size ${n} filled`);
+}
+
+/* ===== 全套 Word 方案导出（Word HTML 格式，零依赖，Word/WPS 直接打开） ===== */
+function esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function ph(t) { return `<span class="placeholder">${esc(t) || '【待补充】'}</span>`; }
+function linesOf(text) {
+  return String(text || '').split('\n').map(s => s.trim()).filter(Boolean).map(s => s.replace(/^[-•*]\s*/, ''));
+}
+function ulOf(text) {
+  const items = linesOf(text);
+  return items.length ? '<ul>' + items.map(i => `<li>${esc(i)}</li>`).join('') + '</ul>' : `<p>${ph()}</p>`;
+}
+function wordShell(title, content) {
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/1999/xhtml">
+<head><meta charset="utf-8"><title>${esc(title)}</title>
+<style>
+@page { size: A4; margin: 2.54cm 2.8cm; }
+body { font-family: "Times New Roman", 宋体, SimSun, serif; font-size: 12pt; line-height: 1.6; color: #000; }
+h1 { font-family: 黑体, SimHei, sans-serif; font-size: 16pt; margin: 20pt 0 10pt; }
+h2 { font-family: 黑体, SimHei, sans-serif; font-size: 14pt; margin: 18pt 0 8pt; border-bottom: 1px solid #999; padding-bottom: 4pt; }
+h3 { font-family: 黑体, SimHei, sans-serif; font-size: 12.5pt; margin: 12pt 0 6pt; }
+p { margin: 6pt 0; }
+table { border-collapse: collapse; width: 100%; margin: 8pt 0; }
+td, th { border: 1px solid #444; padding: 5pt 8pt; font-size: 11pt; vertical-align: top; }
+th { background: #eee; }
+ul { margin: 6pt 0 6pt 22pt; }
+.cover { text-align: center; padding-top: 110pt; }
+.cover .t { font-size: 22pt; font-weight: bold; font-family: 黑体, SimHei, sans-serif; line-height: 1.6; }
+.cover table { width: 75%; margin: 55pt auto 0; }
+.cover td { border: none; text-align: left; font-size: 12pt; padding: 6pt; }
+.pb { page-break-before: always; }
+.placeholder { color: #c00000; }
+.doc-head { text-align: center; font-size: 16pt; font-weight: bold; font-family: 黑体, SimHei, sans-serif; margin-bottom: 18pt; }
+</style></head><body>${content}</body></html>`;
+}
+function getCheckItems(zh) {
+  let items = zh ? [
+    '研究方案版本号、日期、PI签名完整', '入选排除标准清晰可操作，无模糊表述', '主要终点指标定义明确、可测量',
+    '样本量估算依据充分、脱落率设置合理', '风险获益评估明确，风险控制措施具体', '知情同意流程合规，弱势群体保护说明充分',
+    '数据安全、隐私保护、去标识化措施明确', '不良事件报告与处理流程清晰', '研究者资质与研究团队能力说明', '利益冲突声明完整'
+  ] : [
+    'Protocol version, date, and PI signature complete', 'Inclusion/exclusion criteria clear and operational',
+    'Primary endpoint clearly defined and measurable', 'Sample size justification adequate, dropout rate reasonable',
+    'Risk-benefit assessment clear, control measures specific', 'Informed consent compliant, vulnerable population protected',
+    'Data security, privacy, de-identification measures clear', 'AE reporting and handling procedures clear',
+    'Investigator qualifications and team capability described', 'Conflict of interest statement complete'
+  ];
+  if (state.researchType === 'realworld') {
+    items = items.concat(zh ? ['RWD数据来源清晰、可追溯', '数据适用性评估完成（Fit for Purpose）', '偏倚控制策略明确（PSM/IV/阴性对照）', '外部对照组可比性分析充分']
+      : ['RWD data source identified and traceable', 'Data fitness assessment completed', 'Bias control strategy defined (PSM/IV/negative control)', 'External control comparability adequate']);
+  }
+  return items;
+}
+function buildCover(zh, title) {
+  const d = new Date().toISOString().slice(0, 10);
+  const centers = state.centerType === 'multi'
+    ? (zh ? `多中心（${state.centerCount || 'X'}家）` : `Multi-center (${state.centerCount || 'X'})`)
+    : (zh ? '单中心' : 'Single-center');
+  return `<div class="cover">
+  <div class="t">${esc(title)}</div>
+  <p style="margin-top:14pt;font-size:14pt;">${zh ? '临床研究方案（含全套配套文档）' : 'Clinical Study Protocol (Full Package)'}</p>
+  <table>
+    <tr><td style="width:32%">${zh ? '方案编号' : 'Protocol No.'}</td><td>${ph('【待填写】')}</td></tr>
+    <tr><td>${zh ? '版本号 / 日期' : 'Version / Date'}</td><td>V1.0 / ${d}</td></tr>
+    <tr><td>${zh ? '研究类型' : 'Study Type'}</td><td>${i18n.type[state.researchType]?.[state.lang] || ''}</td></tr>
+    <tr><td>${zh ? '研究设计' : 'Design'}</td><td>${i18n.design[state.researchDesign]?.[state.lang] || ''}</td></tr>
+    <tr><td>${zh ? '发起主体' : 'Sponsor'}</td><td>${i18n.sponsor[state.sponsorType]?.[state.lang] || ''}</td></tr>
+    <tr><td>${zh ? '主要研究者（PI）' : 'Principal Investigator'}</td><td>${ph('【姓名 / 职称 / 单位】')}</td></tr>
+    <tr><td>${zh ? '研究中心' : 'Centers'}</td><td>${centers}</td></tr>
+  </table>
+  <p style="margin-top:48pt;font-size:9.5pt;color:#666;">${zh ? '本文件为学术写作辅助模板，不构成诊疗建议；提交伦理/立项前须由 PI、统计师、研究团队共同审核确认' : 'Drafting template only; must be reviewed by PI, biostatistician and study team before submission'}</p>
+</div><div class="pb"></div>`;
+}
+function buildSynopsis(zh) {
+  const S = state;
+  return `<h2>${zh ? '研究摘要' : 'Synopsis'}</h2>
+<table>
+<tr><th style="width:28%">${zh ? '研究题目' : 'Title'}</th><td>${esc(S.projectName) || ph()}</td></tr>
+<tr><th>${zh ? '研究类型 / 设计' : 'Type / Design'}</th><td>${i18n.type[S.researchType]?.[state.lang] || ''} / ${i18n.design[S.researchDesign]?.[state.lang] || ''}</td></tr>
+<tr><th>${zh ? '适应症 / 研究领域' : 'Indication'}</th><td>${esc(S.disease) || ph()}</td></tr>
+<tr><th>${zh ? '干预 / 对照' : 'Intervention / Control'}</th><td>${esc(S.intervention) || ph()} / ${esc(S.control) || ph()}</td></tr>
+<tr><th>${zh ? '主要终点' : 'Primary Endpoint'}</th><td>${esc(S.primaryEndpoint) || ph()}</td></tr>
+<tr><th>${zh ? '次要终点' : 'Secondary Endpoints'}</th><td>${linesOf(S.secondaryEndpoints).map(esc).join('；') || ph()}</td></tr>
+<tr><th>${zh ? '样本量' : 'Sample Size'}</th><td>${esc(S.sampleSize) || ph(zh ? '待估算' : 'TBD')} ${zh ? '例' : ''}</td></tr>
+</table>`;
+}
+function buildProtocolWord(zh) {
+  const S = state;
+  const sec = (num, title, body) => `<h2>${num} ${title}</h2>${body}`;
+  const sub = (title, body) => `<h3>${title}</h3>${body || `<p>${ph()}</p>`}`;
+  let h = buildSynopsis(zh);
+
+  if (S.researchType === 'realworld') {
+    h += sec(zh ? '一、' : '1.', zh ? '研究背景与立题依据' : 'Background & Rationale',
+      `<p>${ph(zh ? '临床需求、RWD 数据来源、FDA RWE 适用性分析' : 'TBD')}</p>`)
+    + sec(zh ? '二、' : '2.', zh ? '研究目的' : 'Objectives',
+      sub(zh ? '2.1 主要目的' : '2.1 Primary', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
+      + sub(zh ? '2.2 次要目的' : '2.2 Secondary', ulOf(S.secondaryEndpoints)))
+    + sec(zh ? '三、' : '3.', zh ? 'RWE 三步评估框架' : 'RWE 3-Step Framework',
+      sub(zh ? '3.1 数据适用性评估（Fit for Purpose）' : '3.1 Data Fitness')
+      + sub(zh ? '3.2 研究设计科学性评估' : '3.2 Design Validity', `<p>${zh ? '样本量' : 'N'}：${esc(S.sampleSize) || ph()}</p>`)
+      + sub(zh ? '3.3 研究执行合规性评估' : '3.3 Execution Compliance'))
+    + sec(zh ? '四、' : '4.', zh ? '研究人群与数据来源' : 'Population & Data Sources', '')
+    + sec(zh ? '五、' : '5.', zh ? '统计分析计划' : 'Statistical Analysis', `<p>${ph(zh ? '倾向性评分匹配 / 工具变量 / 阴性对照等' : 'PSM / IV / negative controls')}</p>`)
+    + sec(zh ? '六、' : '6.', zh ? '伦理与数据安全' : 'Ethics & Data Security', '');
+  } else if (S.researchType === 'postmarketing') {
+    h += sec(zh ? '一、' : '1.', zh ? '研究背景与法规依据' : 'Background & Regulatory Basis',
+      sub(zh ? '1.1 药品获批背景与新安全信号' : '1.1 Approval Background')
+      + sub(zh ? '1.2 FDA 505(o)(3) 要求依据' : '1.2 FDAAA 505(o)(3) Basis')
+      + sub(zh ? '1.3 PMR / PMC 类型判定' : '1.3 PMR vs PMC Classification'))
+    + sec(zh ? '二、' : '2.', zh ? '研究目的' : 'Objectives', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
+    + sec(zh ? '三、' : '3.', zh ? '研究设计与方法' : 'Design & Methods',
+      `<p>${zh ? '样本量' : 'N'}：${esc(S.sampleSize) || ph()}</p>`)
+    + sec(zh ? '四、' : '4.', zh ? '研究时间表与里程碑' : 'Milestones',
+      `<table><tr><th>${zh ? '里程碑' : 'Milestone'}</th><th>${zh ? '计划日期' : 'Date'}</th></tr>
+      <tr><td>${zh ? '方案提交' : 'Protocol submission'}</td><td>${ph()}</td></tr>
+      <tr><td>${zh ? '首例入组' : 'First patient in'}</td><td>${ph()}</td></tr>
+      <tr><td>${zh ? '末例随访' : 'Last follow-up'}</td><td>${ph()}</td></tr>
+      <tr><td>${zh ? '最终报告' : 'Final report'}</td><td>${ph()}</td></tr></table>`)
+    + sec(zh ? '五、' : '5.', zh ? '数据收集与统计分析' : 'Data & Statistics', '')
+    + sec(zh ? '六、' : '6.', zh ? '伦理与参与者保护' : 'Ethics', '')
+    + sec(zh ? '七、' : '7.', zh ? '研究进展报告要求' : 'Progress Reporting', `<p>${ph(zh ? '年度报告内容、入组进度' : 'Annual report, enrollment')}</p>`);
+  } else if (S.researchType === 'observational') {
+    h += sec(zh ? '一、' : '1.', zh ? '研究背景与立项依据' : 'Background', '')
+    + sec(zh ? '二、' : '2.', zh ? '研究目的与研究假设' : 'Objectives & Hypothesis', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
+    + sec(zh ? '三、' : '3.', zh ? '研究设计' : 'Design',
+      sub(zh ? '3.1 研究现场与时间范围' : '3.1 Setting')
+      + sub(zh ? '3.2 研究对象与来源' : '3.2 Population')
+      + sub(zh ? '3.3 样本量估算与依据' : '3.3 Sample Size', `<p>${esc(S.sampleSize) || ph()}</p>`))
+    + sec(zh ? '四、' : '4.', zh ? '研究内容与变量定义' : 'Variables',
+      sub(zh ? '4.1 暴露因素定义与测量' : '4.1 Exposure')
+      + sub(zh ? '4.2 结局指标定义与判定' : '4.2 Outcomes')
+      + sub(zh ? '4.3 混杂因素与协变量' : '4.3 Confounders'))
+    + sec(zh ? '五、' : '5.', zh ? '随访计划（前瞻性适用）' : 'Follow-up', '')
+    + sec(zh ? '六、' : '6.', zh ? '偏倚控制策略' : 'Bias Control', '')
+    + sec(zh ? '七、' : '7.', zh ? '数据管理与质量控制' : 'Data Management', '')
+    + sec(zh ? '八、' : '8.', zh ? '统计分析方案' : 'Statistical Analysis', '')
+    + sec(zh ? '九、' : '9.', zh ? '伦理审查与知情同意' : 'Ethics & Consent', `<p>${ph(zh ? '回顾性研究涉及豁免知情的，须向伦理委员会正式申请' : 'Waiver of consent requires IRB approval')}</p>`)
+    + sec(zh ? '十、' : '10.', zh ? '研究进度与组织管理' : 'Timeline', '')
+    + sec(zh ? '十一、' : '11.', zh ? '参考文献' : 'References', '');
+  } else if (S.researchType === 'diagnostic') {
+    h += sec(zh ? '一、' : '1.', zh ? '研究背景（STARD 对齐）' : 'Background (STARD-aligned)', '')
+    + sec(zh ? '二、' : '2.', zh ? '研究目的' : 'Objectives', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
+    + sec(zh ? '三、' : '3.', zh ? '研究设计与人群' : 'Design & Population',
+      sub(zh ? '3.1 待评价试验方法' : '3.1 Index Test', `<p>${esc(S.intervention) || ph()}</p>`)
+      + sub(zh ? '3.2 金标准/参比方法' : '3.2 Reference Standard', `<p>${esc(S.control) || ph()}</p>`)
+      + sub(zh ? '3.3 样本量' : '3.3 Sample Size', `<p>${esc(S.sampleSize) || ph()}</p>`))
+    + sec(zh ? '四、' : '4.', zh ? '评价指标（灵敏度/特异度/ROC）' : 'Accuracy Measures', '')
+    + sec(zh ? '五、' : '5.', zh ? '统计分析计划' : 'Statistics', '')
+    + sec(zh ? '六、' : '6.', zh ? '伦理与质量控制' : 'Ethics & QC', '');
+  } else if (S.templateVersion === 'international') {
+    const secs = zh ? [
+      ['方案总结（概要、试验示意图、研究时间表 SoA）'], ['研究背景与获益风险评估'],
+      ['试验目的、终点与被估量（Estimand，对齐 ICH E9(R1)）'], ['试验设计'],
+      ['研究人群（入选/排除标准）'], ['试验干预与对照（随机化、设盲、合并用药）'],
+      ['试验干预中止与参与者退出'], ['评估与检测（有效性、安全性、AE/SAE）'],
+      ['统计学考虑（分析集、缺失值、敏感性分析、期中分析）'], ['伦理与监管'],
+      ['数据质量与源数据管理（ICH E6(R3)）'], ['不良事件因果关系判定'],
+      ['质量源于设计（QbD）与风险控制计划'], ['缩略语与术语定义'], ['参考文献']
+    ] : [
+      ['Protocol Summary & SoA'], ['Background & Benefit-Risk'], ['Objectives, Endpoints & Estimands (ICH E9(R1))'],
+      ['Trial Design'], ['Study Population'], ['Interventions & Controls'], ['Discontinuation & Withdrawal'],
+      ['Assessments (Efficacy, Safety, AE/SAE)'], ['Statistical Considerations'], ['Ethics & Regulatory'],
+      ['Data Quality & Source Data (E6(R3))'], ['AE Causality'], ['QbD & Risk Control'], ['Abbreviations'], ['References']
+    ];
+    secs.forEach((s, i) => {
+      let body = '';
+      if (i === 4) body = sub(zh ? '入选标准' : 'Inclusion', ulOf(S.inclusionCriteria)) + sub(zh ? '排除标准' : 'Exclusion', ulOf(S.exclusionCriteria));
+      h += sec((i + 1) + '.', s[0], body);
+    });
+  } else {
+    /* 国内 IIT 适配版（版本B，16 章） */
+    h += sec(zh ? '一、' : '1.', zh ? '研究背景与立项依据' : 'Background & Rationale',
+      `<p>${zh ? '适应症' : 'Indication'}：${esc(S.disease) || ph()}</p><p>${ph(zh ? '国内外研究现状、证据缺口、立项依据' : 'TBD')}</p>`)
+    + sec(zh ? '二、' : '2.', zh ? '研究目的' : 'Objectives',
+      sub(zh ? '2.1 主要目的' : '2.1 Primary', `<p>${esc(S.primaryEndpoint) || ph()}</p>`)
+      + sub(zh ? '2.2 次要目的' : '2.2 Secondary', ulOf(S.secondaryEndpoints))
+      + sub(zh ? '2.3 探索性目的' : '2.3 Exploratory'))
+    + sec(zh ? '三、' : '3.', zh ? '研究设计' : 'Study Design',
+      sub(zh ? '3.1 研究现场与研究人群' : '3.1 Setting & Population')
+      + sub(zh ? '3.2 分组与随机化/设盲方案' : '3.2 Randomization & Blinding')
+      + sub(zh ? '3.3 干预措施与对照选择' : '3.3 Intervention & Control',
+        `<p>${zh ? '试验组' : 'Treatment'}：${esc(S.intervention) || ph()}</p><p>${zh ? '对照组' : 'Control'}：${esc(S.control) || ph()}</p>`)
+      + sub(zh ? '3.4 随访计划与研究流程图' : '3.4 Follow-up & Flow Chart')
+      + sub(zh ? '3.5 结局指标定义与测量方法' : '3.5 Outcome Definitions')
+      + sub(zh ? '3.6 样本量估算与依据' : '3.6 Sample Size',
+        `<p>${zh ? '计划样本量' : 'Planned N'}：${esc(S.sampleSize) || ph(zh ? '待估算' : 'TBD')} ${zh ? '例' : ''}</p><p>${ph(zh ? '估算公式、参数依据（α、检验效能、预期效应值、脱落率）' : 'Formula & assumptions')}</p>`))
+    + sec(zh ? '四、' : '4.', zh ? '研究人群' : 'Study Population',
+      sub(zh ? '4.1 入选标准' : '4.1 Inclusion Criteria', ulOf(S.inclusionCriteria))
+      + sub(zh ? '4.2 排除标准' : '4.2 Exclusion Criteria', ulOf(S.exclusionCriteria))
+      + sub(zh ? '4.3 退出/脱落/终止标准' : '4.3 Withdrawal Criteria'))
+    + sec(zh ? '五、' : '5.', zh ? '干预方案与研究程序' : 'Intervention & Procedures',
+      sub(zh ? '5.1 干预措施详情' : '5.1 Intervention Details')
+      + sub(zh ? '5.2 剂量调整与中止规则' : '5.2 Dose Modification')
+      + sub(zh ? '5.3 合并用药与禁忌' : '5.3 Concomitant Medication')
+      + sub(zh ? '5.4 依从性管理' : '5.4 Adherence'))
+    + sec(zh ? '六、' : '6.', zh ? '疗效与安全性评价' : 'Efficacy & Safety Evaluation', '')
+    + sec(zh ? '七、' : '7.', zh ? '不良事件管理与报告' : 'AE Management & Reporting', '')
+    + sec(zh ? '八、' : '8.', zh ? '数据管理' : 'Data Management',
+      sub(zh ? '8.1 CRF 设计与数据录入' : '8.1 CRF & Entry') + sub(zh ? '8.2 数据核查与锁定' : '8.2 Cleaning & Locking') + sub(zh ? '8.3 数据存档与保密' : '8.3 Archiving'))
+    + sec(zh ? '九、' : '9.', zh ? '统计分析计划' : 'Statistical Analysis Plan', `<p>${ph(zh ? '分析集定义、统计方法、缺失值处理、敏感性分析' : 'Analysis sets, methods, missing data, sensitivity')}</p>`)
+    + sec(zh ? '十、' : '10.', zh ? '伦理与受试者保护' : 'Ethics & Protection',
+      sub(zh ? '10.1 伦理审查安排' : '10.1 IRB Review') + sub(zh ? '10.2 知情同意流程' : '10.2 Informed Consent')
+      + sub(zh ? '10.3 风险获益评估与保障' : '10.3 Risk-Benefit') + sub(zh ? '10.4 隐私与利益冲突' : '10.4 Privacy & COI'))
+    + sec(zh ? '十一、' : '11.', zh ? '研究管理与质量控制' : 'Management & QC',
+      sub(zh ? '11.1 方案修订流程' : '11.1 Amendments') + sub(zh ? '11.2 监查计划与质量保证' : '11.2 Monitoring') + sub(zh ? '11.3 提前终止规则' : '11.3 Early Termination'))
+    + sec(zh ? '十二、' : '12.', zh ? '进度安排与组织架构' : 'Timeline & Organization', '')
+    + sec(zh ? '十三、' : '13.', zh ? '经费预算' : 'Budget', `<p>${ph(zh ? '详见配套《经费预算表》' : 'See Budget Table')}</p>`)
+    + sec(zh ? '十四、' : '14.', zh ? '可行性分析与创新点' : 'Feasibility & Innovation', '')
+    + sec(zh ? '十五、' : '15.', zh ? '参考文献' : 'References', '')
+    + sec(zh ? '十六、' : '16.', zh ? '附件' : 'Appendices', `<p>${zh ? 'CRF、ICF、审批文件等（见本文件后续配套文档）' : 'CRF, ICF, approvals (see attached documents)'}</p>`);
+  }
+  return h;
+}
+
+/* ===== 配套文档模板生成器 ===== */
+const docBuilders = {
+  icf: (zh, title) => `<div class="doc-head">${zh ? '知情同意书（成人版）' : 'Informed Consent Form (Adult)'}</div>
+<p>${zh ? '研究名称' : 'Study'}：${esc(title)}</p>
+<h3>${zh ? '1. 研究简介与目的' : '1. Introduction & Purpose'}</h3><p>${zh ? '我们邀请您参加' : 'You are invited to join'}「${esc(title)}」。${zh ? '本研究旨在评估' : 'This study aims to evaluate'} ${esc(state.primaryEndpoint) || ph()}。${zh ? '参加完全自愿，您可随时退出且不影响常规诊疗。' : 'Participation is voluntary.'}</p></p>
+<h3>${zh ? '2. 研究流程' : '2. Procedures'}</h3><p>${ph(zh ? '筛选、干预、随访各阶段的检查项目与时间安排' : 'Procedures & schedule')}</p>
+<h3>${zh ? '3. 可能的风险与不适' : '3. Risks'}</h3><p>${ph()}</p>
+<h3>${zh ? '4. 可能的获益' : '4. Benefits'}</h3><p>${ph()}</p>
+<h3>${zh ? '5. 费用与补偿' : '5. Costs & Compensation'}</h3><p>${ph()}</p>
+<h3>${zh ? '6. 隐私与数据保护' : '6. Privacy'}</h3><p>${zh ? '您的个人信息将去标识化处理，仅用于本研究。' : 'Your data will be de-identified.'}</p>
+<h3>${zh ? '7. 自愿参加与退出权利' : '7. Voluntary Participation'}</h3><p>${zh ? '您有权在任何时间退出本研究，无需说明理由。' : 'You may withdraw at any time.'}</p>
+<h3>${zh ? '8. 联系方式' : '8. Contacts'}</h3><p>${zh ? '研究者' : 'Investigator'}：${ph()}　${zh ? '伦理委员会' : 'IRB'}：${ph()}</p>
+<table style="margin-top:24pt;"><tr><th>${zh ? '受试者签名/日期' : 'Participant Signature/Date'}</th><th>${zh ? '研究者签名/日期' : 'Investigator Signature/Date'}</th></tr>
+<tr><td style="height:40pt"></td><td></td></tr></table>`,
+  crf: (zh, title) => `<div class="doc-head">${zh ? '病例报告表（CRF）设计模板' : 'Case Report Form (CRF) Template'}</div>
+<p>${zh ? '研究名称' : 'Study'}：${esc(title)}</p>
+<h3>${zh ? '1. 筛选期' : '1. Screening'}</h3>
+<table><tr><th>${zh ? '字段' : 'Field'}</th><th>${zh ? '内容' : 'Content'}</th><th>${zh ? '填写说明' : 'Note'}</th></tr>
+<tr><td>${zh ? '受试者编号' : 'Subject ID'}</td><td></td><td>${zh ? '中心号+流水号' : 'Center + serial'}</td></tr>
+<tr><td>${zh ? '知情同意签署日期' : 'ICF Date'}</td><td></td><td></td></tr>
+<tr><td>${zh ? '入排标准核查' : 'Eligibility'}</td><td></td><td>${zh ? '逐条勾选' : 'Item-by-item'}</td></tr></table>
+<h3>${zh ? '2. 基线期' : '2. Baseline'}</h3><p>${ph(zh ? '人口学、病史、合并用药、基线检查' : 'Demographics, history, baseline exams')}</p>
+<h3>${zh ? '3. 治疗/随访期' : '3. Treatment / Follow-up'}</h3><p>${ph(zh ? '按随访点设置疗效与安全性记录表' : 'Efficacy & safety per visit')}</p>
+<h3>${zh ? '4. 不良事件记录表' : '4. AE Log'}</h3>
+<table><tr><th>${zh ? 'AE 名称' : 'AE'}</th><th>${zh ? '起止时间' : 'Onset/End'}</th><th>${zh ? '严重程度' : 'Severity'}</th><th>${zh ? '相关性' : 'Causality'}</th><th>${zh ? '转归' : 'Outcome'}</th></tr>
+<tr><td style="height:28pt"></td><td></td><td></td><td></td><td></td></tr></table>`,
+  sap: (zh, title) => `<div class="doc-head">${zh ? '统计分析计划（SAP）' : 'Statistical Analysis Plan (SAP)'}</div>
+<p>${zh ? '研究名称' : 'Study'}：${esc(title)}　${zh ? '版本' : 'Version'}：V1.0</p>
+<h3>${zh ? '1. 分析集定义' : '1. Analysis Sets'}</h3><p>${zh ? '全分析集（FAS）、符合方案集（PPS）、安全性分析集（SS）的定义标准。' : 'FAS / PPS / SS definitions.'}</p>
+<h3>${zh ? '2. 主要终点分析' : '2. Primary Endpoint'}</h3><p>${zh ? '主要终点' : 'Endpoint'}：${esc(state.primaryEndpoint) || ph()}。${ph(zh ? '检验方法、α 水准、多重性控制' : 'Test, α, multiplicity')}</p>
+<h3>${zh ? '3. 次要终点分析' : '3. Secondary Endpoints'}</h3>${ulOf(state.secondaryEndpoints)}
+<h3>${zh ? '4. 缺失值处理' : '4. Missing Data'}</h3><p>${ph(zh ? '如多重插补 / LOCF 等及适用条件' : 'e.g., MI / LOCF')}</p>
+<h3>${zh ? '5. 敏感性分析' : '5. Sensitivity Analyses'}</h3><p>${ph()}</p>
+<h3>${zh ? '6. 亚组与交互作用' : '6. Subgroups'}</h3><p>${ph()}</p>
+<h3>${zh ? '7. 期中分析（如适用）' : '7. Interim Analysis'}</h3><p>${ph()}</p>
+<h3>${zh ? '8. 统计软件' : '8. Software'}</h3><p>${ph('SAS / R ' + (zh ? '版本号' : 'version'))}</p>`,
+  'ethics-application': (zh, title) => `<div class="doc-head">${zh ? '伦理审查申请函' : 'Ethics Review Application'}</div>
+<p>${zh ? '尊敬的伦理委员会：' : 'Dear Ethics Committee,'}</p>
+<p>${zh ? '本研究团队拟开展' : 'We propose to conduct'}「${esc(title)}」（${zh ? '研究设计' : 'Design'}：${i18n.design[state.researchDesign]?.[state.lang] || ''}），${zh ? '现提交伦理审查申请，随附研究方案、知情同意书、CRF 等材料，请予审查。' : 'please find the protocol, ICF and CRF attached for review.'}</p>
+<h3>${zh ? '附：风险评估概要' : 'Attachment: Risk Summary'}</h3>
+<table><tr><th>${zh ? '潜在风险' : 'Risk'}</th><th>${zh ? '控制措施' : 'Mitigation'}</th></tr>
+<tr><td>${ph()}</td><td>${ph()}</td></tr></table>
+<p style="margin-top:18pt;">${zh ? '申请人（PI）签名：____________　日期：____________' : 'PI Signature: ____________  Date: ____________'}</p>`,
+  amendment: (zh, title) => `<div class="doc-head">${zh ? '方案修正案与修订记录' : 'Protocol Amendment & Revision Log'}</div>
+<p>${zh ? '研究名称' : 'Study'}：${esc(title)}</p>
+<table><tr><th>${zh ? '版本' : 'Version'}</th><th>${zh ? '日期' : 'Date'}</th><th>${zh ? '修订章节' : 'Section'}</th><th>${zh ? '变更内容' : 'Change'}</th><th>${zh ? '修订依据' : 'Rationale'}</th></tr>
+<tr><td>V1.0</td><td>${new Date().toISOString().slice(0, 10)}</td><td>${zh ? '初始版本' : 'Initial'}</td><td>—</td><td>—</td></tr>
+<tr><td style="height:26pt"></td><td></td><td></td><td></td><td></td></tr></table>
+<p>${ph(zh ? '重大修订须重新提交伦理审查' : 'Substantial amendments require IRB re-review')}</p>`,
+  'ethics-reply': (zh, title) => `<div class="doc-head">${zh ? '伦理意见逐条应答函' : 'Response to Ethics Committee Comments'}</div>
+<p>${zh ? '研究名称' : 'Study'}：${esc(title)}</p>
+<table><tr><th style="width:8%">${zh ? '序号' : 'No.'}</th><th style="width:36%">${zh ? '伦理意见' : 'Comment'}</th><th>${zh ? '逐条应答与修改说明' : 'Response & Revision'}</th><th style="width:16%">${zh ? '修改位置' : 'Location'}</th></tr>
+<tr><td>1</td><td style="height:30pt"></td><td></td><td></td></tr>
+<tr><td>2</td><td style="height:30pt"></td><td></td><td></td></tr></table>`,
+  budget: (zh, title) => `<div class="doc-head">${zh ? '经费预算科目表' : 'Budget Table'}</div>
+<p>${zh ? '研究名称' : 'Study'}：${esc(title)}</p>
+<table><tr><th>${zh ? '科目' : 'Category'}</th><th>${zh ? '明细说明' : 'Details'}</th><th style="width:18%">${zh ? '金额（元）' : 'Amount (CNY)'}</th></tr>
+${(zh ? ['检查检验费', '药品/器械费', '受试者补偿', '数据管理与统计费', '伦理审查费', '差旅/会议费', '发表/出版费', '不可预见费'] : ['Lab/Exams', 'Drug/Device', 'Participant compensation', 'Data mgmt & stats', 'IRB fee', 'Travel', 'Publication', 'Contingency']).map(c => `<tr><td>${c}</td><td></td><td></td></tr>`).join('')}
+<tr><th>${zh ? '合计' : 'Total'}</th><td></td><td></td></tr></table>`,
+  'rwe-assessment': (zh, title) => `<div class="doc-head">${zh ? 'RWE 适用性评估报告（Fit-for-Purpose）' : 'RWE Fit-for-Purpose Assessment'}</div>
+<p>${zh ? '研究名称' : 'Study'}：${esc(title)}</p>
+<h3>${zh ? '1. 数据来源与可追溯性' : '1. Data Source & Traceability'}</h3><p>${ph(zh ? '登记数据库 / EHR / 理赔数据来源说明' : 'Registry / EHR / claims')}</p>
+<h3>${zh ? '2. 数据质量评估' : '2. Data Quality'}</h3>
+<table><tr><th>${zh ? '维度' : 'Dimension'}</th><th>${zh ? '评估要点' : 'Criteria'}</th><th>${zh ? '结论' : 'Conclusion'}</th></tr>
+<tr><td>${zh ? '完整性' : 'Completeness'}</td><td>${zh ? '关键字段缺失率' : 'Missing rate'}</td><td>${ph()}</td></tr>
+<tr><td>${zh ? '准确性' : 'Accuracy'}</td><td>${zh ? '与源数据一致性核查' : 'Source verification'}</td><td>${ph()}</td></tr>
+<tr><td>${zh ? '代表性' : 'Representativeness'}</td><td>${zh ? '目标人群覆盖度' : 'Coverage'}</td><td>${ph()}</td></tr></table>
+<h3>${zh ? '3. 偏倚控制策略' : '3. Bias Control'}</h3><p>${ph(zh ? 'PSM / 工具变量 / 阴性对照选择依据' : 'PSM / IV / negative control')}</p>
+<h3>${zh ? '4. 适用性结论' : '4. Conclusion'}</h3><p>${ph()}</p>`
+};
+function buildSupportDocsWord(zh, title) {
+  return state.selectedDocs
+    .filter(d => docBuilders[d])
+    .map(d => `<div class="pb"></div>${docBuilders[d](zh, title)}`)
+    .join('');
+}
+function buildChecklistWord(zh) {
+  const items = getCheckItems(zh);
+  return `<div class="pb"></div><div class="doc-head">${zh ? '附录：合规核查清单' : 'Appendix: Compliance Checklist'}</div>
+<table><tr><th style="width:8%">${zh ? '序号' : 'No.'}</th><th>${zh ? '核查项' : 'Item'}</th><th style="width:14%">${zh ? '确认' : 'Check'}</th></tr>
+${items.map((it, i) => `<tr><td>${i + 1}</td><td>${esc(it)}</td><td>☐</td></tr>`).join('')}</table>`;
+}
+function exportWord() {
+  collectFormData();
+  const zh = state.lang === 'zh';
+  const title = state.projectName || (zh ? '临床研究方案' : 'Clinical Study Protocol');
+  const content = buildCover(zh, title)
+    + `<div class="doc-head">${zh ? '研究方案正文' : 'Protocol Body'}</div>`
+    + buildProtocolWord(zh)
+    + buildSupportDocsWord(zh, title)
+    + buildChecklistWord(zh);
+  const html = wordShell(title, content);
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (zh ? '' : '') + title.replace(/[\\/:*?"<>|]/g, '_') + (zh ? '_全套方案.doc' : '_FullPackage.doc');
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  const docCount = state.selectedDocs.filter(d => docBuilders[d]).length;
+  showToast(zh
+    ? `已导出 Word 全套方案（正文 + ${docCount} 份配套文档 + 核查清单）`
+    : `Word package exported (protocol + ${docCount} documents + checklist)`);
 }
 
 /* ===== 星尘迸发：进入预览页的仪式感 ===== */
