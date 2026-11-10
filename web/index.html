@@ -735,6 +735,83 @@
     transition: width 0.6s var(--ease-expo);
   }
 
+  /* 样本量自动估算器 */
+  .ss-block {
+    margin: -6px 0 26px;
+    border: 1px solid rgba(201, 169, 97, 0.3);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(201, 169, 97, 0.05), rgba(21, 64, 122, 0.03));
+    overflow: hidden;
+  }
+  .ss-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .ss-toggle:hover { background: rgba(201, 169, 97, 0.08); }
+  .ss-toggle-icon { font-size: 15px; }
+  .ss-arrow {
+    margin-left: auto;
+    color: var(--accent);
+    transition: transform 0.35s var(--ease-expo);
+  }
+  .ss-arrow.open { transform: rotate(180deg); }
+  .ss-body {
+    display: none;
+    padding: 6px 20px 20px;
+    border-top: 1px dashed rgba(201, 169, 97, 0.3);
+  }
+  .ss-body.open {
+    display: block;
+    animation: fadeUp 0.4s var(--ease-expo) both;
+  }
+  .ss-params .form-group { margin-bottom: 16px; }
+  .ss-calc-btn { width: 100%; margin-bottom: 14px; }
+  .ss-result {
+    display: none;
+    margin-bottom: 14px;
+    padding: 16px 18px;
+    border-radius: 10px;
+    background: rgba(45, 134, 89, 0.07);
+    border: 1px solid rgba(45, 134, 89, 0.25);
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .ss-result.show {
+    display: block;
+    animation: fadeUp 0.45s var(--ease-expo) both;
+  }
+  .ss-result .ss-num {
+    font-family: var(--font-latin-display);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--success);
+  }
+  .ss-fill-btn {
+    margin-top: 10px;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent) 0%, #b8984f 100%);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: var(--transition);
+  }
+  .ss-fill-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px var(--accent-glow); }
+
   /* 复选框组 */
   .checkbox-group {
     display: grid;
@@ -1217,6 +1294,54 @@
       </div>
     </div>
 
+    <!-- 样本量自动估算器 -->
+    <div class="ss-block">
+      <button type="button" class="ss-toggle" id="ss-toggle" onclick="toggleSS()">
+        <span class="ss-toggle-icon">📐</span>
+        <span class="zh">样本量自动估算器</span><span class="en">Sample Size Calculator</span>
+        <span class="ss-arrow" id="ss-arrow">▾</span>
+      </button>
+      <div class="ss-body" id="ss-body">
+        <div class="form-group">
+          <label class="form-label"><span class="zh">计算方法</span><span class="en">Method</span></label>
+          <select class="form-select" id="ss-method" onchange="renderSSParams()">
+            <option value="means"><span class="zh">两独立样本均数比较（优效）</span><span class="en">Two-sample means (superiority)</span></option>
+            <option value="proportions"><span class="zh">两独立样本率比较（优效）</span><span class="en">Two-sample proportions (superiority)</span></option>
+            <option value="noninferiority"><span class="zh">两样本率比较（非劣效）</span><span class="en">Two-sample proportions (non-inferiority)</span></option>
+            <option value="onesample"><span class="zh">单样本率检验（单臂/历史对照）</span><span class="en">One-sample proportion (single-arm)</span></option>
+          </select>
+        </div>
+        <div class="ss-params" id="ss-params"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label"><span class="zh">检验水准 α</span><span class="en">Significance α</span></label>
+            <select class="form-select" id="ss-alpha">
+              <option value="1.960"><span class="zh">双侧 0.05</span><span class="en">Two-sided 0.05</span></option>
+              <option value="1.645"><span class="zh">单侧 0.05</span><span class="en">One-sided 0.05</span></option>
+              <option value="2.576"><span class="zh">双侧 0.01</span><span class="en">Two-sided 0.01</span></option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><span class="zh">检验效能 1-β</span><span class="en">Power 1-β</span></label>
+            <select class="form-select" id="ss-power">
+              <option value="0.842">80%</option>
+              <option value="1.282">90%</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="zh">预计脱落率 %</span><span class="en">Dropout Rate %</span></label>
+          <input class="form-input" type="number" id="ss-dropout" value="15" min="0" max="50" step="1">
+        </div>
+        <button type="button" class="btn btn-primary ss-calc-btn" onclick="calcSS()">
+          <span class="zh">计算样本量</span><span class="en">Calculate</span>
+        </button>
+        <div class="ss-result" id="ss-result"></div>
+        <div class="hint zh">⚠️ 估算结果基于正态近似公式，仅为方案撰写参考框架，最终参数须由专业统计师确认。</div>
+        <div class="hint en">⚠ Estimates use normal approximation formulas for drafting reference only; final parameters must be confirmed by a biostatistician.</div>
+      </div>
+    </div>
+
     <div class="form-group">
       <label class="form-label">
         <span class="zh">主要研究终点</span><span class="en">Primary Endpoint</span><span class="required">*</span>
@@ -1579,6 +1704,15 @@ function selectDesign(el, design) {
   document.querySelectorAll('#design-options .option-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   state.researchDesign = design;
+  // 按研究设计智能推荐样本量计算方法
+  const ssMap = { 'single-arm': 'onesample', 'non-inferiority': 'noninferiority', rct: 'proportions', crossover: 'means' };
+  if (ssMap[design]) {
+    const sel = document.getElementById('ss-method');
+    if (sel) {
+      sel.value = ssMap[design];
+      if (document.getElementById('ss-params').innerHTML) renderSSParams();
+    }
+  }
 }
 
 // 步骤导航
@@ -2032,6 +2166,98 @@ function updateMeter() {
 document.addEventListener('input', e => {
   if (meterFields.includes(e.target.id)) updateMeter();
 });
+
+/* ===== 样本量自动估算器（正态近似闭式公式） ===== */
+const ssParamDefs = {
+  means: [
+    { id: 'ss-sigma', zh: '预期标准差 σ', en: 'Expected SD σ', ph: '如 8.5' },
+    { id: 'ss-delta', zh: '组间最小临床意义差值 δ', en: 'Minimal clinical difference δ', ph: '如 3.0' }
+  ],
+  proportions: [
+    { id: 'ss-p1', zh: '试验组预期率 p1 %', en: 'Treatment rate p1 %', ph: '如 65' },
+    { id: 'ss-p2', zh: '对照组预期率 p2 %', en: 'Control rate p2 %', ph: '如 45' }
+  ],
+  noninferiority: [
+    { id: 'ss-pt', zh: '试验组预期率 pT %', en: 'Treatment rate pT %', ph: '如 62' },
+    { id: 'ss-pc', zh: '对照组预期率 pC %', en: 'Control rate pC %', ph: '如 60' },
+    { id: 'ss-margin', zh: '非劣效界值 Δ %', en: 'NI margin Δ %', ph: '如 10' }
+  ],
+  onesample: [
+    { id: 'ss-p0', zh: '历史/已知对照率 p0 %', en: 'Historical rate p0 %', ph: '如 40' },
+    { id: 'ss-p', zh: '预期率 p %', en: 'Expected rate p %', ph: '如 55' }
+  ]
+};
+function toggleSS() {
+  const body = document.getElementById('ss-body');
+  const open = body.classList.toggle('open');
+  document.getElementById('ss-arrow').classList.toggle('open', open);
+  if (open && !document.getElementById('ss-params').innerHTML) renderSSParams();
+}
+function renderSSParams() {
+  const m = document.getElementById('ss-method').value;
+  document.getElementById('ss-params').innerHTML = ssParamDefs[m].map(f => `
+    <div class="form-group">
+      <label class="form-label"><span class="zh">${f.zh}</span><span class="en">${f.en}</span></label>
+      <input class="form-input" type="number" id="${f.id}" step="any" placeholder="${f.ph}">
+    </div>
+  `).join('');
+  document.getElementById('ss-result').classList.remove('show');
+}
+function ssVal(id) {
+  const el = document.getElementById(id);
+  return el ? parseFloat(el.value) : NaN;
+}
+function ssError() {
+  showToast(state.lang === 'zh' ? '请完整、正确地填写估算参数' : 'Please complete all parameters correctly');
+}
+function calcSS() {
+  const m = document.getElementById('ss-method').value;
+  const za = parseFloat(document.getElementById('ss-alpha').value);
+  const zb = parseFloat(document.getElementById('ss-power').value);
+  const dropout = Math.min(0.5, Math.max(0, (parseFloat(document.getElementById('ss-dropout').value) || 0) / 100));
+  const z2 = Math.pow(za + zb, 2);
+  let perGroup = NaN, twoGroup = true, desc = '';
+  if (m === 'means') {
+    const s = ssVal('ss-sigma'), d = ssVal('ss-delta');
+    if (!(s > 0 && d > 0)) return ssError();
+    perGroup = 2 * z2 * s * s / (d * d);
+    desc = 'σ=' + s + ', δ=' + d;
+  } else if (m === 'proportions') {
+    const p1 = ssVal('ss-p1') / 100, p2 = ssVal('ss-p2') / 100;
+    if (!(p1 > 0 && p1 < 1 && p2 > 0 && p2 < 1 && p1 !== p2)) return ssError();
+    perGroup = z2 * (p1 * (1 - p1) + p2 * (1 - p2)) / Math.pow(p1 - p2, 2);
+    desc = 'p1=' + (p1 * 100) + '%, p2=' + (p2 * 100) + '%';
+  } else if (m === 'noninferiority') {
+    const pt = ssVal('ss-pt') / 100, pc = ssVal('ss-pc') / 100, mg = ssVal('ss-margin') / 100;
+    if (!(pt > 0 && pt < 1 && pc > 0 && pc < 1 && mg > 0 && (pt - pc + mg) !== 0)) return ssError();
+    perGroup = z2 * (pt * (1 - pt) + pc * (1 - pc)) / Math.pow(pt - pc + mg, 2);
+    desc = 'pT=' + (pt * 100) + '%, pC=' + (pc * 100) + '%, Δ=' + (mg * 100) + '%';
+  } else if (m === 'onesample') {
+    const p0 = ssVal('ss-p0') / 100, p = ssVal('ss-p') / 100;
+    if (!(p0 > 0 && p0 < 1 && p > 0 && p < 1 && p !== p0)) return ssError();
+    perGroup = Math.pow(za * Math.sqrt(p0 * (1 - p0)) + zb * Math.sqrt(p * (1 - p)), 2) / Math.pow(p - p0, 2);
+    desc = 'p0=' + (p0 * 100) + '%, p=' + (p * 100) + '%';
+    twoGroup = false;
+  }
+  perGroup = Math.ceil(perGroup);
+  const total = twoGroup ? perGroup * 2 : perGroup;
+  const inflated = Math.ceil(total / (1 - dropout));
+  const zh = state.lang === 'zh';
+  const res = document.getElementById('ss-result');
+  res.innerHTML = `
+    <div>${zh ? '参数' : 'Parameters'}：${desc} ｜ α z=${za}, 1-β z=${zb}</div>
+    ${twoGroup ? `<div>${zh ? '每组所需' : 'Per group'}：<span class="ss-num">${perGroup}</span> 例 ｜ ${zh ? '两组合计' : 'Total'}：${total} 例</div>`
+               : `<div>${zh ? '所需样本量' : 'Required N'}：<span class="ss-num">${perGroup}</span> 例</div>`}
+    <div>${zh ? '校正' : 'After'} ${(dropout * 100).toFixed(0)}% ${zh ? '脱落率后' : 'dropout'}：<span class="ss-num">${inflated}</span> 例</div>
+    <button type="button" class="ss-fill-btn" onclick="fillSS(${inflated})">${zh ? '一键填入样本量 →' : 'Fill into Sample Size →'}</button>
+  `;
+  res.classList.add('show');
+}
+function fillSS(n) {
+  document.getElementById('sample-size').value = n;
+  updateMeter();
+  showToast(state.lang === 'zh' ? `已填入样本量 ${n} 例` : `Sample size ${n} filled`);
+}
 
 /* ===== 星尘迸发：进入预览页的仪式感 ===== */
 function celebrate() {
